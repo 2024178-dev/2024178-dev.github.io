@@ -379,6 +379,7 @@
         let timeInterval;
         let chancesLeft = 2;
         const TIME_LIMIT = 120; // 2 minutes in seconds
+        let isDeathMessage = false;
 
         // Player (ball) object
         const player = {
@@ -562,7 +563,13 @@
                 gameOver("총 2번의 기회를 모두 사용했습니다.");
             } else if (hasWon) {
                 gameWin();
-            } else {
+            } else if (isDeathMessage) {
+                 level = 1;
+                 loadLevel();
+                 isPaused = false;
+                 isGameRunning = false;
+            }
+            else {
                 level++;
                 loadLevel();
                 isPaused = false;
@@ -772,8 +779,9 @@
                     stopTimer(); // Stop timer on hit
                     chancesLeft--;
                     updateUI();
+                    isDeathMessage = true;
                     if (chancesLeft >= 0) {
-                        showMessageBox("게임 오버!", `가시에 닿았습니다! 남은 기회: ${chancesLeft}`);
+                        showMessageBox("목숨을 잃었습니다!", `가시에 닿았습니다! 남은 기회: ${chancesLeft}`);
                     } else {
                         gameOver("모든 기회를 소진했습니다!");
                     }
@@ -787,6 +795,7 @@
                 player.y - player.radius < exit.y + exit.height) {
                 if (coins.length === 0) {
                     stopTimer();
+                    isDeathMessage = false;
                     if (levels[level + 1]) {
                         showMessageBox("레벨 클리어!", "다음 레벨로 이동합니다.");
                     } else {
@@ -800,8 +809,9 @@
                 stopTimer();
                 chancesLeft--;
                 updateUI();
+                isDeathMessage = true;
                 if (chancesLeft >= 0) {
-                    showMessageBox("게임 오버!", `바닥으로 떨어졌습니다! 남은 기회: ${chancesLeft}`);
+                    showMessageBox("목숨을 잃었습니다!", `바닥으로 떨어졌습니다! 남은 기회: ${chancesLeft}`);
                 } else {
                     gameOver("모든 기회를 소진했습니다!");
                 }
