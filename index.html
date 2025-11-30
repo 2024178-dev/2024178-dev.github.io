@@ -1,995 +1,792 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>최고의 2D 바운스볼</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #1d2b40;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            overflow: hidden;
-            margin: 0;
-            user-select: none;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>최고의 2D 바운스볼: 10단계 마스터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js 사운드 및 음악 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #1d2b40;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+        }
 
-        .game-container {
-            position: relative;
-            width: 800px;
-            height: 500px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 
-                0 0 20px rgba(0, 255, 255, 0.3),
-                0 0 40px rgba(0, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 255, 0.3),
+                0 0 40px rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            transition: background-color 0.5s;
+        }
 
-        .ui-panel {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            z-index: 10;
-        }
-        
-        .timer-panel {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 10;
-        }
+        .ui-panel {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            z-index: 10;
+        }
+        
+        .timer-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
 
-        .info-box {
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-            color: #e0f7fa;
-            font-size: 1.2rem;
-            font-weight: bold;
-            text-shadow: 0 0 5px #00ffff;
-            animation: pulse-glow 2s infinite ease-in-out;
-        }
-        
-        .timer-box {
-            padding: 10px 15px;
-            background: rgba(255, 65, 108, 0.3);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 65, 108, 0.4);
-            box-shadow: 0 0 10px rgba(255, 65, 108, 0.5);
-            color: #fff;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-        
-        .lives-box {
-            font-size: 1.5rem;
-            color: #ff416c;
-            text-shadow: 0 0 8px #ff416c;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
+        .info-box {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            color: #e0f7fa;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-shadow: 0 0 5px #00ffff;
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+        
+        .timer-box {
+            padding: 10px 15px;
+            background: rgba(255, 65, 108, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 65, 108, 0.4);
+            box-shadow: 0 0 10px rgba(255, 65, 108, 0.5);
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-width: 150px;
+            text-align: center;
+        }
+        
+        .lives-box {
+            font-size: 1.5rem;
+            color: #ff416c;
+            text-shadow: 0 0 8px #ff416c;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
 
-        @keyframes pulse-glow {
-            0% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
-            50% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.8), 0 0 30px rgba(0, 255, 255, 0.5); }
-            100% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
-        }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.8), 0 0 30px rgba(0, 255, 255, 0.5); }
+            100% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
+        }
 
-        .message-box, .rules-box, .end-screen {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(17, 24, 39, 0.9);
-            color: #e0f7fa;
-            padding: 32px 48px;
-            border-radius: 16px;
-            box-shadow: 0 0 25px rgba(0, 255, 255, 0.5);
-            text-align: center;
-            display: none;
-            z-index: 20;
-            border: 2px solid #00ffff;
-            min-width: 350px;
-        }
-        
-        .rules-box, .start-screen {
-            display: block; /* Show on initial load */
-        }
+        .message-box, .rules-box, .end-screen {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(17, 24, 39, 0.95);
+            color: #e0f7fa;
+            padding: 32px 48px;
+            border-radius: 16px;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.8);
+            text-align: center;
+            display: none;
+            z-index: 20;
+            border: 2px solid #00ffff;
+            min-width: 350px;
+            max-width: 90%;
+        }
+        
+        .rules-box, .start-screen {
+            display: block; /* 초기 로드 시 표시 */
+        }
 
-        .message-box h3, .rules-box h3, .end-screen h3 {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #fff;
-            margin-bottom: 16px;
-            text-shadow: 0 0 8px #00ffff;
-        }
-        
-        .message-box p, .rules-box p, .end-screen p {
-            font-size: 1.2rem;
-            color: #b3e0ff;
-            margin-bottom: 32px;
-            white-space: pre-wrap;
-            text-align: left;
-        }
-        
-        .message-box button, .rules-box button, .end-screen button {
-            background-image: linear-gradient(45deg, #00ffff, #00bfff);
-            color: #111827;
-            padding: 12px 28px;
-            border-radius: 9999px;
-            font-weight: bold;
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
-        }
-        
-        .message-box button:hover, .rules-box button:hover, .end-screen button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 255, 255, 0.6);
-        }
-
-        .restart-panel {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-        }
-
-        .restart-panel button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 40px;
-            height: 40px;
-            padding: 0;
-            border-radius: 50%;
-            background-image: linear-gradient(45deg, #ff416c, #ff4b2b);
-            color: #fff;
-            font-size: 0; /* Hide text */
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 5px 15px rgba(255, 65, 108, 0.4);
-        }
-        .restart-panel button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(255, 65, 108, 0.6);
-        }
-        .restart-panel button svg {
-            width: 20px;
-            height: 20px;
-            color: white;
-        }
-
-        #leaderboard {
-            width: 100%;
-            max-height: 250px;
-            overflow-y: auto;
-            margin-top: 20px;
-            list-style: none;
-            padding: 0;
-            text-align: left;
-        }
-        #leaderboard li {
-            background-color: rgba(255, 255, 255, 0.08);
-            padding: 12px;
-            margin-bottom: 8px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1rem;
-        }
-        #leaderboard li:nth-child(1) { background-color: rgba(255, 215, 0, 0.2); }
-        #leaderboard li:nth-child(2) { background-color: rgba(192, 192, 192, 0.2); }
-        #leaderboard li:nth-child(3) { background-color: rgba(205, 127, 50, 0.2); }
-    </style>
+        .message-box h3, .rules-box h3, .end-screen h3 {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 16px;
+            text-shadow: 0 0 8px #00ffff;
+        }
+        
+        .message-box p, .rules-box p, .end-screen p {
+            font-size: 1.1rem;
+            color: #b3e0ff;
+            margin-bottom: 32px;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+        
+        .message-box button, .rules-box button, .end-screen button {
+            background-image: linear-gradient(45deg, #00ffff, #00bfff);
+            color: #111827;
+            padding: 12px 28px;
+            border-radius: 9999px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+        }
+        
+        .message-box button:hover, .rules-box button:hover, .end-screen button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 255, 255, 0.9);
+        }
+        
+        #leaderboard {
+            width: 100%;
+            max-height: 250px;
+            overflow-y: auto;
+            margin-top: 20px;
+            list-style: none;
+            padding: 0;
+            text-align: left;
+        }
+        #leaderboard li {
+            background-color: rgba(255, 255, 255, 0.08);
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1rem;
+        }
+        #leaderboard li:nth-child(1) { background-color: rgba(255, 215, 0, 0.2); }
+        #leaderboard li:nth-child(2) { background-color: rgba(192, 192, 192, 0.2); }
+        #leaderboard li:nth-child(3) { background-color: rgba(205, 127, 50, 0.2); }
+    </style>
 </head>
 <body class="bg-gray-900 flex items-center justify-center p-4">
-    <div class="game-container flex flex-col items-center justify-center">
-        <div class="ui-panel">
-            <div class="info-box" id="score">점수: 0</div>
-            <div class="info-box" id="level">레벨: 1</div>
-            <div class="lives-box" id="lives-info">❤️ x 2</div>
-        </div>
-        <div class="timer-panel">
-            <div class="timer-box" id="time-info">남은 시간: 120초</div>
-        </div>
-        <canvas id="gameCanvas"></canvas>
-        <div class="restart-panel">
-            <button id="restartButton">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M14.953 10.824a.75.75 0 0 0-.964.28l-2.029 3.424a.75.75 0 0 0 1.272.756l.66-1.114 1.144 1.145a.75.75 0 0 0 1.06-1.06l-1.637-1.638a.75.75 0 0 0-.272-.647Z" />
-                    <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM4.643 7.823a.75.75 0 0 1 1.065-.119 8.238 8.238 0 0 0 2.215 3.012c1.491 1.15 3.178 1.91 4.965 2.18l.781 2.921a.75.75 0 0 1-1.12.986 8.238 8.238 0 0 0-2.215-3.012c-1.491-1.15-3.178-1.91-4.965-2.18a.75.75 0 0 1-.12-.912Z" clip-rule="evenodd" />
-                </svg>
-            </button>
-        </div>
-    </div>
-    
-    <!-- Start Screen -->
-    <div id="startScreen" class="rules-box">
-        <h3 class="text-white">게임 시작</h3>
-        <p class="text-center text-sm mb-4">
-            랭킹에 기록될 이름을 입력하세요.
-        </p>
-        <input type="text" id="playerNameInput" class="w-full p-3 rounded-lg border border-gray-300 text-black mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="이름을 입력하세요" />
-        <button id="startNameButton">다음</button>
-    </div>
+    <div class="game-container flex flex-col items-center justify-center">
+        <div class="ui-panel">
+            <div class="info-box" id="score">점수: 0</div>
+            <div class="info-box" id="level">레벨: 1</div>
+            <div class="lives-box" id="lives-info">❤️ x 3</div>
+        </div>
+        <div class="timer-panel">
+            <div class="timer-box" id="time-info">남은 시간: 60초</div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="dimmer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0); pointer-events: none; transition: background-color 0.5s;"></div>
+    </div>
+    
+    <!-- 시작 화면 -->
+    <div id="startScreen" class="rules-box">
+        <h3 class="text-white">게임 시작</h3>
+        <p class="text-center text-sm mb-4">
+            랭킹에 기록될 이름을 입력하세요.
+        </p>
+        <input type="text" id="playerNameInput" class="w-full p-3 rounded-lg border border-gray-300 text-black mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="이름을 입력하세요" />
+        <button id="startNameButton">다음</button>
+    </div>
 
-    <!-- Rules Screen -->
-    <div id="rulesBox" class="rules-box hidden">
-        <h3>게임 규칙</h3>
-        <p>
-            1. 화살표 키(←, →) 또는 A/D 키로 좌우로 이동하세요.
-            2. 스페이스바 또는 W 키로 점프하세요.
-            3. 붉은색 가시 블록에 닿거나, 시간이 초과되면 게임 오버입니다.
-            4. 모든 레벨을 클리어하고 최고의 바운스볼 플레이어가 되어보세요!
-            5. 점수와 시간은 스테이지를 클리어할 때마다 기록됩니다.
-            6. 총 2번의 기회가 주어지며, 최대한 짧은 시간 안에 모든 스테이지를 클리어해야 합니다.
-        </p>
-        <button id="startGameButton">확인</button>
-    </div>
+    <!-- 규칙 화면 -->
+    <div id="rulesBox" class="rules-box hidden">
+        <h3>게임 규칙 (총 10단계)</h3>
+        <p>
+            1. 화살표 키(←, →) 또는 A/D 키로 좌우로 이동하세요. 스페이스바 또는 W 키로 점프하세요.
+            2. **기회:** 총 3번의 기회가 주어지며, 붉은색 가시나 추락 시 기회를 1개 잃습니다.
+            3. **점수 차감:** 기회를 잃을 때마다 **현재 레벨 * 50점**이 차감됩니다.
+            4. **타이머:** 각 레벨당 60초가 주어집니다. 시간이 초과되면 기회 1개를 잃고 현재 레벨에서 재시작합니다.
+            5. **4단계부터 난이도 상승:** 화면이 어두워지며, **순간이동 패드**가 나타납니다.
+            6. **랭킹 초기화:** 랭킹은 최대 10명까지 기록되며, 11번째 기록이 등록되면 기존 랭킹은 모두 초기화됩니다.
+        </p>
+        <button id="startGameButton">확인</button>
+    </div>
 
-    <div id="messageBox" class="message-box hidden">
-        <h3 id="messageTitle"></h3>
-        <p id="messageText"></p>
-        <button id="closeMessageButton">확인</button>
-    </div>
-    
-    <div id="endScreen" class="end-screen hidden">
-        <h3 id="endTitle">게임 오버!</h3>
-        <p id="endMessage"></p>
-        <div class="mt-4">
-            <p>최종 점수: <span id="finalScore">0</span></p>
-            <p>최종 시간: <span id="finalTime">0</span></p>
-        </div>
-        <h4 class="text-xl font-bold mt-6 mb-2">랭킹</h4>
-        <ul id="leaderboard"></ul>
-        <button id="playAgainButton" class="mt-4">다시하기</button>
-    </div>
+    <div id="messageBox" class="message-box hidden">
+        <h3 id="messageTitle"></h3>
+        <p id="messageText"></p>
+        <button id="closeMessageButton">확인</button>
+    </div>
+    
+    <!-- 게임 종료 및 랭킹 화면 -->
+    <div id="endScreen" class="end-screen hidden">
+        <h3 id="endTitle">게임 오버!</h3>
+        <p id="endMessage"></p>
+        <div class="mt-4 text-left mx-auto">
+            <p>최종 도달 레벨: <span id="finalLevel">0</span></p>
+            <p>총 획득 점수: <span id="finalScore">0</span></p>
+            <p>총 누적 클리어 시간: <span id="finalTime">0</span></p>
+            <p>최종 랭킹 점수: <span id="finalRankingScore">0</span></p>
+        </div>
+        <h4 class="text-xl font-bold mt-6 mb-2">랭킹</h4>
+        <ul id="leaderboard"></ul>
+        <button id="playAgainButton" class="mt-4">다시하기</button>
+    </div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, getDocs, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Firebase 모듈 임포트
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            query, 
+            onSnapshot, 
+            getDocs, // 랭킹 개수 확인용
+            deleteDoc, // 랭킹 삭제용
+            doc 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 
-        setLogLevel('debug');
+        setLogLevel('debug');
 
-        // Global Firebase variables
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
-        let app;
-        let db;
-        let auth;
-        let userId;
-        let isAuthReady = false;
+        // 전역 Firebase 변수 (Canvas 환경에서 제공됨)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let app;
+        let db;
+        let auth;
+        let userId;
+        let isAuthReady = false;
 
-        function initializeFirebase() {
-            if (Object.keys(firebaseConfig).length === 0) {
-                console.error("Firebase config is not available. Check your environment setup.");
-                return;
-            }
-            try {
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-            } catch (error) {
-                console.error("Firebase initialization failed:", error);
-                return;
-            }
+        // --- Tone.js 사운드 설정 ---
+        // BGM Synth (배경 음악)
+        const bgmSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "square" },
+            envelope: { attack: 0.1, decay: 0.5, sustain: 0.3, release: 1 },
+            volume: -15
+        }).toDestination();
 
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    userId = user.uid;
-                    isAuthReady = true;
-                    // Fetch leaderboard as soon as user is authenticated
-                    fetchLeaderboard();
-                } else {
-                    try {
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    } catch (error) {
-                        console.error("Sign-in failed:", error);
-                    }
-                }
-            });
-        }
-        
-        // --- Game Logic Variables ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreElement = document.getElementById('score');
-        const levelElement = document.getElementById('level');
-        const timeElement = document.getElementById('time-info');
-        const livesElement = document.getElementById('lives-info');
-        const messageBox = document.getElementById('messageBox');
-        const messageTitle = document.getElementById('messageTitle');
-        const messageText = document.getElementById('messageText');
-        const closeMessageButton = document.getElementById('closeMessageButton');
-        const startScreen = document.getElementById('startScreen');
-        const rulesBox = document.getElementById('rulesBox');
-        const endScreen = document.getElementById('endScreen');
-        const startNameButton = document.getElementById('startNameButton');
-        const startGameButton = document.getElementById('startGameButton');
-        const restartButton = document.getElementById('restartButton');
-        const playAgainButton = document.getElementById('playAgainButton');
-        const playerNameInput = document.getElementById('playerNameInput');
-        const finalScore = document.getElementById('finalScore');
-        const finalTime = document.getElementById('finalTime');
-        const leaderboardList = document.getElementById('leaderboard');
-        
-        // Game state variables
-        let score = 0;
-        let level = 1;
-        let isGameOver = false;
-        let hasWon = false;
-        let isPaused = true;
-        let isGameRunning = false; // Add this state
-        let lastJumpTime = 0;
-        const jumpCooldown = 300; // ms
-        let playerName = '';
-        let startTime;
-        let timeInterval;
-        let chancesLeft = 2;
-        const TIME_LIMIT = 120; // 2 minutes in seconds
-        let isDeathMessage = false;
+        // BGM 루프 (간단한 8비트 스타일 멜로디)
+        const loop = new Tone.Sequence((time, note) => {
+            bgmSynth.triggerAttackRelease(note, "4n", time);
+        }, ["C4", "E4", "G4", "A4", "G4", "E4"], "1n").start(0);
 
-        // Player (ball) object
-        const player = {
-            x: 0,
-            y: 0,
-            radius: 15,
-            color: '#ff6b6b',
-            vx: 0,
-            vy: 0,
-            speed: 5,
-            jumpPower: -10,
-            jumpsRemaining: 2
-        };
+        Tone.Transport.bpm.value = 100; // 속도 설정
+        Tone.Transport.loop = true;
+        Tone.Transport.loopStart = 0;
+        Tone.Transport.loopEnd = "2m"; // 2마디 루프
 
-        const gravity = 0.5;
-        const friction = 0.8;
-        const airFriction = 0.98;
-        let hue = 0; // Hue variable for rainbow color
+        // 효과음 Synths
+        const coinSynth = new Tone.MetalSynth({
+            frequency: 200,
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.05 },
+            harmonicity: 3.1, modulationIndex: 2, octaves: 1.5
+        }).toDestination();
 
-        // Game element arrays
-        const platforms = [];
-        const coins = [];
-        const spikes = [];
-        let exit;
+        const jumpSynth = new Tone.Synth({
+            oscillator: { type: "triangle" },
+            envelope: { attack: 0.005, decay: 0.02, sustain: 0.1, release: 0.1 }
+        }).toDestination();
+        
+        const deathSynth = new Tone.NoiseSynth({
+            noise: { type: "pink" },
+            envelope: { attack: 0.005, decay: 0.2, sustain: 0 }
+        }).toDestination();
 
-        // Animation variables
-        let exitGlowIntensity = 0;
-        let exitInactiveGlow = 0;
-        let gameLoopId;
+        function startBGM() {
+            // 사용자의 상호작용 후 Tone.js 시작
+            if (Tone.Transport.state !== 'started') {
+                Tone.start();
+                Tone.Transport.start();
+            }
+        }
+        // --- End Tone.js Setup ---
 
-        // Level data (more complex levels for longer gameplay)
-        const levels = {
-            1: {
-                startPos: { x: 50, y: 400 },
-                platforms: [
-                    { x: 0, y: 450, width: 800, height: 50 },
-                    { x: 200, y: 350, width: 150, height: 20 },
-                    { x: 450, y: 280, width: 100, height: 20 },
-                    { x: 600, y: 200, width: 100, height: 20 }
-                ],
-                coins: [
-                    { x: 275, y: 320, radius: 10 },
-                    { x: 495, y: 250, radius: 10 },
-                    { x: 650, y: 170, radius: 10 }
-                ],
-                spikes: [
-                    { x: 300, y: 430, width: 40, height: 20 },
-                    { x: 500, y: 430, width: 40, height: 20 }
-                ],
-                exit: { x: 700, y: 160, width: 50, height: 40, color: '#68d391' }
-            },
-            2: {
-                startPos: { x: 50, y: 400 },
-                platforms: [
-                    { x: 0, y: 450, width: 800, height: 50 },
-                    { x: 150, y: 350, width: 100, height: 20 },
-                    { x: 300, y: 250, width: 150, height: 20 },
-                    { x: 500, y: 320, width: 120, height: 20 },
-                    { x: 650, y: 200, width: 80, height: 20 },
-                    { x: 400, y: 120, width: 100, height: 20 }
-                ],
-                coins: [
-                    { x: 200, y: 320, radius: 10 },
-                    { x: 375, y: 220, radius: 10 },
-                    { x: 690, y: 170, radius: 10 },
-                    { x: 450, y: 90, radius: 10 }
-                ],
-                spikes: [
-                    { x: 400, y: 430, width: 40, height: 20 },
-                    { x: 550, y: 300, width: 40, height: 20 },
-                    { x: 300, y: 230, width: 40, height: 20 }
-                ],
-                exit: { x: 750, y: 410, width: 50, height: 40, color: '#68d391' }
-            },
-            3: {
-                startPos: { x: 50, y: 400 },
-                platforms: [
-                    { x: 0, y: 450, width: 800, height: 50 },
-                    { x: 150, y: 350, width: 100, height: 20 },
-                    { x: 300, y: 250, width: 150, height: 20 },
-                    { x: 500, y: 150, width: 120, height: 20 },
-                    { x: 650, y: 250, width: 80, height: 20 },
-                    { x: 200, y: 150, width: 100, height: 20 }
-                ],
-                coins: [
-                    { x: 200, y: 320, radius: 10 },
-                    { x: 375, y: 220, radius: 10 },
-                    { x: 560, y: 120, radius: 10 },
-                    { x: 700, y: 220, radius: 10 },
-                    { x: 250, y: 120, radius: 10 }
-                ],
-                spikes: [
-                    { x: 400, y: 430, width: 40, height: 20 },
-                    { x: 550, y: 230, width: 40, height: 20 },
-                    { x: 100, y: 430, width: 40, height: 20 },
-                    { x: 600, y: 130, width: 40, height: 20 }
-                ],
-                exit: { x: 750, y: 410, width: 50, height: 40, color: '#68d391' }
-            }
-        };
 
-        // Key input handler
-        const keys = {
-            left: false,
-            right: false,
-            up: false
-        };
+        // Firebase 초기화 및 인증 설정
+        function initializeFirebase() {
+            if (Object.keys(firebaseConfig).length === 0) {
+                console.error("Firebase 설정이 제공되지 않았습니다.");
+                return;
+            }
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+            } catch (error) {
+                console.error("Firebase 초기화 실패:", error);
+                return;
+            }
 
-        document.addEventListener('keydown', (e) => {
-            if (isGameOver || hasWon || isPaused) return;
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
-            if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-                if (!keys.up) {
-                    keys.up = true;
-                }
-            }
-        });
+            // 인증 상태 변화 감지 및 초기 인증
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    isAuthReady = true;
+                    fetchLeaderboard();
+                } else {
+                    try {
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("로그인 실패:", error);
+                    }
+                }
+            });
+        }
+        
+        // --- 게임 로직 변수 ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const dimmer = document.getElementById('dimmer');
+        const scoreElement = document.getElementById('score');
+        const levelElement = document.getElementById('level');
+        const timeElement = document.getElementById('time-info');
+        const livesElement = document.getElementById('lives-info');
+        const messageBox = document.getElementById('messageBox');
+        const messageTitle = document.getElementById('messageTitle');
+        const messageText = document.getElementById('messageText');
+        const closeMessageButton = document.getElementById('closeMessageButton');
+        const startScreen = document.getElementById('startScreen');
+        const rulesBox = document.getElementById('rulesBox');
+        const endScreen = document.getElementById('endScreen');
+        const startNameButton = document.getElementById('startNameButton');
+        const startGameButton = document.getElementById('startGameButton');
+        const playAgainButton = document.getElementById('playAgainButton');
+        const playerNameInput = document.getElementById('playerNameInput');
+        const finalLevel = document.getElementById('finalLevel');
+        const finalScore = document.getElementById('finalScore');
+        const finalTime = document.getElementById('finalTime');
+        const finalRankingScore = document.getElementById('finalRankingScore');
+        const leaderboardList = document.getElementById('leaderboard');
+        
+        // 게임 상태 변수
+        let score = 0;
+        let level = 1;
+        let isGameOver = false;
+        let hasWon = false;
+        let isPaused = true;
+        let isGameRunning = false;
+        let lastJumpTime = 0;
+        const jumpCooldown = 300; // ms
+        let playerName = '';
+        
+        let levelStartTime = 0; // 현재 레벨 시작 시점 (ms)
+        const levelTimeLimit = 60000; // 60초 (ms)
+        let levelTimeRemaining = levelTimeLimit; // 남은 시간 (ms)
+        let totalTime = 0; // 1단계부터의 누적 클리어 시간 (ms)
+        let lastUpdateTime = 0;
+        let chancesLeft = 3; // 총 3번의 기회 (초기 생명 + 2)
+        let isDeathMessage = false;
 
-        document.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
-            if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-                keys.up = false;
-            }
-        });
-        
-        startNameButton.addEventListener('click', () => {
-            playerName = playerNameInput.value.trim();
-            if (playerName) {
-                startScreen.style.display = 'none';
-                rulesBox.style.display = 'block';
-            } else {
-                playerNameInput.placeholder = "이름을 꼭 입력해주세요!";
-                playerNameInput.classList.add('ring-2', 'ring-red-500');
-            }
-        });
+        // 플레이어(볼) 객체
+        const player = {
+            x: 0,
+            y: 0,
+            radius: 15,
+            color: '#ff6b6b',
+            vx: 0,
+            vy: 0,
+            speed: 5,
+            jumpPower: -10,
+            jumpsRemaining: 2,
+            isGrounded: false
+        };
 
-        startGameButton.addEventListener('click', () => {
-            rulesBox.style.display = 'none';
-            isPaused = false;
-            isGameRunning = false;
-            chancesLeft = 2; // Reset chances
-            loadLevel();
-            if(!gameLoopId) {
-                gameLoopId = requestAnimationFrame(gameLoop);
-            }
-        });
+        const gravity = 0.5;
+        const friction = 0.8;
+        const airFriction = 0.98;
+        let hue = 0; // 무지개색을 위한 색상 변수
 
-        restartButton.addEventListener('click', () => {
-            chancesLeft--;
-            if (chancesLeft >= 0) {
-                level = 1;
-                loadLevel();
-                isPaused = false;
-                isGameRunning = false;
-            } else {
-                gameOver("모든 기회를 소진했습니다!");
-            }
-        });
-        
-        playAgainButton.addEventListener('click', () => {
-            endScreen.style.display = 'none';
-            startScreen.style.display = 'block';
-            isPaused = true;
-            playerNameInput.value = '';
-            level = 1;
-            score = 0;
-            isGameOver = false;
-            hasWon = false;
-            isGameRunning = false;
-            chancesLeft = 2;
-            updateUI();
-            updateTimerDisplay(TIME_LIMIT);
-        });
+        // 게임 요소 배열
+        const platforms = [];
+        const coins = [];
+        const spikes = [];
+        const teleporters = [];
+        let exit;
 
-        closeMessageButton.addEventListener('click', () => {
-            messageBox.style.display = 'none';
-            if (isGameOver) {
-                // If it's a "Game Over" message, the game is already over, just show end screen.
-                gameOver("총 2번의 기회를 모두 사용했습니다.");
-            } else if (hasWon) {
-                gameWin();
-            } else if (isDeathMessage) {
-                 level = 1;
-                 loadLevel();
-                 isPaused = false;
-                 isGameRunning = false;
-            }
-            else {
-                level++;
-                loadLevel();
-                isPaused = false;
-                isGameRunning = false; // Reset game running state for new level
-            }
-        });
+        // 애니메이션 변수
+        let exitGlowIntensity = 0;
+        let exitInactiveGlow = 0;
+        let gameLoopId;
 
-        // Show message box
-        function showMessageBox(title, message) {
-            isPaused = true;
-            messageTitle.textContent = title;
-            messageText.textContent = message;
-            messageBox.style.display = 'block';
-        }
+        // 레벨 데이터 (이전 레벨 데이터 유지)
+        const levels = {
+            1: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 200, y: 350, width: 150, height: 20 },
+                    { x: 450, y: 280, width: 100, height: 20 },
+                    { x: 600, y: 200, width: 100, height: 20 }
+                ],
+                coins: [
+                    { x: 275, y: 320, radius: 10 },
+                    { x: 495, y: 250, radius: 10 },
+                    { x: 650, y: 170, radius: 10 }
+                ],
+                spikes: [
+                    { x: 300, y: 430, width: 40, height: 20 },
+                    { x: 500, y: 430, width: 40, height: 20 }
+                ],
+                teleporters: [],
+                exit: { x: 700, y: 160, width: 50, height: 40, color: '#68d391' }
+            },
+            2: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 150, y: 350, width: 100, height: 20 },
+                    { x: 300, y: 250, width: 150, height: 20 },
+                    { x: 500, y: 320, width: 120, height: 20 },
+                    { x: 650, y: 200, width: 80, height: 20 },
+                    { x: 400, y: 120, width: 100, height: 20 }
+                ],
+                coins: [
+                    { x: 200, y: 320, radius: 10 },
+                    { x: 375, y: 220, radius: 10 },
+                    { x: 690, y: 170, radius: 10 },
+                    { x: 450, y: 90, radius: 10 }
+                ],
+                spikes: [
+                    { x: 400, y: 430, width: 40, height: 20 },
+                    { x: 550, y: 300, width: 40, height: 20 },
+                    { x: 300, y: 230, width: 40, height: 20 }
+                ],
+                teleporters: [],
+                exit: { x: 750, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            3: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 150, y: 350, width: 100, height: 20 },
+                    { x: 300, y: 250, width: 150, height: 20 },
+                    { x: 500, y: 150, width: 120, height: 20 },
+                    { x: 650, y: 250, width: 80, height: 20 },
+                    { x: 200, y: 150, width: 100, height: 20 }
+                ],
+                coins: [
+                    { x: 200, y: 320, radius: 10 },
+                    { x: 375, y: 220, radius: 10 },
+                    { x: 560, y: 120, radius: 10 },
+                    { x: 700, y: 220, radius: 10 },
+                    { x: 250, y: 120, radius: 10 }
+                ],
+                spikes: [
+                    { x: 400, y: 430, width: 40, height: 20 },
+                    { x: 550, y: 230, width: 40, height: 20 },
+                    { x: 100, y: 430, width: 40, height: 20 },
+                    { x: 600, y: 130, width: 40, height: 20 }
+                ],
+                teleporters: [],
+                exit: { x: 750, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            4: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.3, // 4단계부터 어두워짐 시작
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 100, y: 350, width: 80, height: 20 },
+                    { x: 250, y: 280, width: 100, height: 20 },
+                    { x: 400, y: 200, width: 150, height: 20 },
+                    { x: 600, y: 150, width: 80, height: 20 },
+                    { x: 700, y: 350, width: 50, height: 20 }
+                ],
+                coins: [
+                    { x: 140, y: 320, radius: 10 },
+                    { x: 300, y: 250, radius: 10 },
+                    { x: 500, y: 170, radius: 10 },
+                    { x: 640, y: 120, radius: 10 }
+                ],
+                spikes: [
+                    { x: 200, y: 430, width: 40, height: 20 },
+                    { x: 450, y: 430, width: 40, height: 20 },
+                    { x: 520, y: 180, width: 40, height: 20 },
+                    { x: 700, y: 430, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 710, y: 310, width: 30, height: 40, id: 1, targetId: 2 }, // A -> B
+                    { x: 10, y: 410, width: 30, height: 40, id: 2, targetId: 1 }  // B -> A
+                ],
+                exit: { x: 450, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            5: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.4,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 150, y: 300, width: 100, height: 20 },
+                    { x: 350, y: 200, width: 100, height: 20 },
+                    { x: 550, y: 100, width: 100, height: 20 },
+                    { x: 700, y: 250, width: 50, height: 20 }
+                ],
+                coins: [
+                    { x: 200, y: 270, radius: 10 },
+                    { x: 400, y: 170, radius: 10 },
+                    { x: 600, y: 70, radius: 10 },
+                    { x: 725, y: 220, radius: 10 }
+                ],
+                spikes: [
+                    { x: 300, y: 430, width: 100, height: 20 },
+                    { x: 550, y: 430, width: 100, height: 20 },
+                    { x: 450, y: 180, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 10, y: 410, width: 30, height: 40, id: 1, targetId: 2 },
+                    { x: 760, y: 410, width: 30, height: 40, id: 2, targetId: 1 }
+                ],
+                exit: { x: 250, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            6: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.5,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 100, y: 350, width: 50, height: 20 },
+                    { x: 200, y: 250, width: 100, height: 20 },
+                    { x: 400, y: 350, width: 150, height: 20 },
+                    { x: 600, y: 250, width: 100, height: 20 }
+                ],
+                coins: [
+                    { x: 125, y: 320, radius: 10 },
+                    { x: 250, y: 220, radius: 10 },
+                    { x: 475, y: 320, radius: 10 },
+                    { x: 650, y: 220, radius: 10 }
+                ],
+                spikes: [
+                    { x: 350, y: 430, width: 100, height: 20 },
+                    { x: 180, y: 230, width: 40, height: 20 },
+                    { x: 680, y: 230, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 750, y: 410, width: 30, height: 40, id: 1, targetId: 2 },
+                    { x: 50, y: 150, width: 30, height: 40, id: 2, targetId: 1 }
+                ],
+                exit: { x: 450, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            7: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.6,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 150, y: 350, width: 50, height: 20 },
+                    { x: 250, y: 250, width: 100, height: 20 },
+                    { x: 450, y: 350, width: 50, height: 20 },
+                    { x: 600, y: 250, width: 100, height: 20 },
+                    { x: 400, y: 150, width: 50, height: 20 }
+                ],
+                coins: [
+                    { x: 175, y: 320, radius: 10 },
+                    { x: 300, y: 220, radius: 10 },
+                    { x: 475, y: 320, radius: 10 },
+                    { x: 650, y: 220, radius: 10 },
+                    { x: 425, y: 120, radius: 10 }
+                ],
+                spikes: [
+                    { x: 200, y: 430, width: 150, height: 20 },
+                    { x: 550, y: 430, width: 150, height: 20 },
+                    { x: 300, y: 230, width: 40, height: 20 },
+                    { x: 650, y: 230, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 10, y: 410, width: 30, height: 40, id: 1, targetId: 2 },
+                    { x: 750, y: 210, width: 30, height: 40, id: 2, targetId: 1 }
+                ],
+                exit: { x: 750, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            8: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.65,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 100, y: 300, width: 100, height: 20 },
+                    { x: 300, y: 150, width: 150, height: 20 },
+                    { x: 550, y: 300, width: 100, height: 20 },
+                    { x: 700, y: 400, width: 50, height: 20 }
+                ],
+                coins: [
+                    { x: 150, y: 270, radius: 10 },
+                    { x: 375, y: 120, radius: 10 },
+                    { x: 600, y: 270, radius: 10 },
+                    { x: 725, y: 370, radius: 10 }
+                ],
+                spikes: [
+                    { x: 250, y: 430, width: 50, height: 20 },
+                    { x: 500, y: 430, width: 50, height: 20 },
+                    { x: 300, y: 130, width: 40, height: 20 },
+                    { x: 410, y: 130, width: 40, height: 20 },
+                    { x: 550, y: 280, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 150, y: 410, width: 30, height: 40, id: 1, targetId: 2 },
+                    { x: 600, y: 100, width: 30, height: 40, id: 2, targetId: 1 }
+                ],
+                exit: { x: 750, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            9: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.7,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 100, y: 350, width: 150, height: 20 },
+                    { x: 300, y: 250, width: 100, height: 20 },
+                    { x: 500, y: 150, width: 150, height: 20 },
+                    { x: 700, y: 250, width: 50, height: 20 }
+                ],
+                coins: [
+                    { x: 175, y: 320, radius: 10 },
+                    { x: 350, y: 220, radius: 10 },
+                    { x: 575, y: 120, radius: 10 },
+                    { x: 725, y: 220, radius: 10 }
+                ],
+                spikes: [
+                    { x: 400, y: 430, width: 100, height: 20 },
+                    { x: 100, y: 330, width: 40, height: 20 },
+                    { x: 210, y: 330, width: 40, height: 20 },
+                    { x: 500, y: 130, width: 40, height: 20 },
+                    { x: 610, y: 130, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 10, y: 410, width: 30, height: 40, id: 1, targetId: 2 },
+                    { x: 760, y: 410, width: 30, height: 40, id: 2, targetId: 3 },
+                    { x: 300, y: 210, width: 30, height: 40, id: 3, targetId: 1 }
+                ],
+                exit: { x: 450, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            10: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.75,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 150, y: 300, width: 50, height: 20 },
+                    { x: 350, y: 200, width: 50, height: 20 },
+                    { x: 550, y: 100, width: 50, height: 20 },
+                    { x: 700, y: 250, width: 50, height: 20 }
+                ],
+                coins: [
+                    { x: 175, y: 270, radius: 10 },
+                    { x: 375, y: 170, radius: 10 },
+                    { x: 575, y: 70, radius: 10 },
+                    { x: 725, y: 220, radius: 10 }
+                ],
+                spikes: [
+                    { x: 250, y: 430, width: 100, height: 20 },
+                    { x: 450, y: 430, width: 100, height: 20 },
+                    { x: 150, y: 280, width: 40, height: 20 },
+                    { x: 350, y: 180, width: 40, height: 20 },
+                    { x: 550, y: 80, width: 40, height: 20 },
+                    { x: 700, y: 230, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 10, y: 410, width: 30, height: 40, id: 1, targetId: 2 },
+                    { x: 760, y: 410, width: 30, height: 40, id: 2, targetId: 3 },
+                    { x: 350, y: 410, width: 30, height: 40, id: 3, targetId: 1 }
+                ],
+                exit: { x: 600, y: 410, width: 50, height: 40, color: '#68d391' }
+            }
+        };
 
-        function updateTimerDisplay(seconds) {
-            timeElement.textContent = `남은 시간: ${seconds}초`;
-        }
+        // 키 입력 핸들러
+        const keys = { left: false, right: false, up: false };
 
-        function startTimer() {
-            if (timeInterval) clearInterval(timeInterval);
-            startTime = Date.now();
-            updateTimerDisplay(TIME_LIMIT);
+        document.addEventListener('keydown', (e) => {
+            if (isGameOver || hasWon || isPaused) return;
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+            if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+                if (!keys.up) keys.up = true;
+            }
+        });
 
-            timeInterval = setInterval(() => {
-                const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-                const remainingSeconds = TIME_LIMIT - elapsedSeconds;
-                
-                if (remainingSeconds <= 0) {
-                    clearInterval(timeInterval);
-                    gameOver("시간 초과!");
-                } else {
-                    updateTimerDisplay(remainingSeconds);
-                }
-            }, 1000);
-        }
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+            if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = false;
+        });
+        
+        // 이벤트 리스너 설정
+        startNameButton.addEventListener('click', () => {
+            playerName = playerNameInput.value.trim();
+            if (playerName) {
+                startScreen.style.display = 'none';
+                rulesBox.style.display = 'block';
+            } else {
+                playerNameInput.placeholder = "이름을 꼭 입력해주세요!";
+                playerNameInput.classList.add('ring-2', 'ring-red-500');
+            }
+        });
 
-        function stopTimer() {
-            if (timeInterval) clearInterval(timeInterval);
-        }
+        startGameButton.addEventListener('click', () => {
+            rulesBox.style.display = 'none';
+            isPaused = false;
+            isGameRunning = true;
+            chancesLeft = 3; 
+            totalTime = 0;
+            level = 1;
+            score = 0;
+            loadLevel();
+            levelStartTime = performance.now(); // 최초 레벨 시작 시간 설정
+            if(!gameLoopId) {
+                gameLoopId = requestAnimationFrame(gameLoop);
+            }
+            startBGM(); // 게임 시작 시 BGM 재생
+        });
+        
+        playAgainButton.addEventListener('click', () => {
+            endScreen.style.display = 'none';
+            startScreen.style.display = 'block';
+            isPaused = true;
+            playerNameInput.value = '';
+            level = 1;
+            score = 0;
+            isGameOver = false;
+            hasWon = false;
+            isGameRunning = false;
+            chancesLeft = 3;
+            totalTime = 0;
+            updateUI();
+            updateTimerDisplay(levelTimeLimit);
+            dimmer.style.backgroundColor = 'rgba(0, 0, 0, 0)'; // 밝게 초기화
+        });
 
-        function gameOver(message) {
-            stopTimer();
-            isGameOver = true;
-            isPaused = true;
-            cancelAnimationFrame(gameLoopId);
-            finalScore.textContent = score;
-            finalTime.textContent = (TIME_LIMIT - Math.max(0, Math.floor((Date.now() - startTime) / 1000))) + '초';
-            endTitle.textContent = "게임 오버!";
-            endMessage.textContent = message;
-            endScreen.style.display = 'block';
-            saveGameRecord(playerName, score, Date.now() - startTime);
-            fetchLeaderboard();
-        }
-
-        function gameWin() {
-            stopTimer();
-            hasWon = true;
-            isPaused = true;
-            cancelAnimationFrame(gameLoopId);
-            finalScore.textContent = score;
-            finalTime.textContent = (TIME_LIMIT - Math.max(0, Math.floor((Date.now() - startTime) / 1000))) + '초';
-            endTitle.textContent = "모든 레벨 클리어!";
-            endMessage.textContent = "최고의 플레이어입니다!";
-            endScreen.style.display = 'block';
-            saveGameRecord(playerName, score, Date.now() - startTime);
-            fetchLeaderboard();
-        }
-
-        // Load level
-        function loadLevel() {
-            const levelData = levels[level] || levels[1];
-            player.x = levelData.startPos.x;
-            player.y = levelData.startPos.y;
-            player.vx = 0;
-            player.vy = 0;
-            player.isGrounded = false;
-            player.jumpsRemaining = 2;
-            
-            platforms.length = 0;
-            levelData.platforms.forEach(p => platforms.push(p));
-            
-            coins.length = 0;
-            levelData.coins.forEach(c => coins.push(c));
-            
-            spikes.length = 0;
-            levelData.spikes.forEach(s => spikes.push(s));
-
-            exit = levelData.exit;
-
-            score = 0;
-            isGameOver = false;
-            hasWon = false;
-            updateUI();
-            updateTimerDisplay(TIME_LIMIT); // Reset timer display
-        }
-
-        function updateUI() {
-            scoreElement.textContent = `점수: ${score}`;
-            levelElement.textContent = `레벨: ${level}`;
-            livesElement.textContent = `❤️ x ${chancesLeft}`;
-        }
-
-        // Update function (game logic)
-        function update() {
-            if (isGameOver || hasWon || isPaused) return;
-
-            // Start timer when the player first moves
-            if (!isGameRunning && (keys.left || keys.right || keys.up)) {
-                isGameRunning = true;
-                startTimer();
-            }
-            
-            // Player movement
-            if (keys.left) {
-                player.vx = -player.speed;
-            } else if (keys.right) {
-                player.vx = player.speed;
-            } else {
-                if (player.isGrounded) {
-                    player.vx *= friction;
-                }
-            }
-
-            // Double jump
-            const currentTime = Date.now();
-            if (keys.up && player.jumpsRemaining > 0 && (currentTime - lastJumpTime > jumpCooldown)) {
-                player.vy = player.jumpPower;
-                player.jumpsRemaining--;
-                player.isGrounded = false;
-                lastJumpTime = currentTime;
-            }
-
-            // Apply gravity and air friction
-            player.vy += gravity;
-            if (!player.isGrounded) {
-                player.vx *= airFriction;
-            }
-
-            let wasGrounded = player.isGrounded;
-
-            player.x += player.vx;
-            platforms.forEach(p => {
-                if (player.y + player.radius > p.y && player.y - player.radius < p.y + p.height) {
-                    if (player.vx > 0 && player.x + player.radius > p.x && player.x - player.radius < p.x) {
-                        player.x = p.x - player.radius;
-                        player.vx = 0;
-                    } 
-                    else if (player.vx < 0 && player.x - player.radius < p.x + p.width && player.x + player.radius > p.x + p.width) {
-                        player.x = p.x + p.width + player.radius;
-                        player.vx = 0;
-                    }
-                }
-            });
-
-            player.y += player.vy;
-            let onGroundThisFrame = false;
-            platforms.forEach(p => {
-                if (player.x + player.radius > p.x && player.x - player.radius < p.x + p.width) {
-                    if (player.vy >= 0 && 
-                        player.y + player.radius >= p.y && 
-                        player.y + player.radius - player.vy <= p.y) {
-                        
-                        player.y = p.y - player.radius;
-                        player.vy = 0;
-                        onGroundThisFrame = true;
-                    } 
-                    else if (player.vy < 0 &&
-                             player.y - player.radius <= p.y + p.height &&
-                             player.y - player.radius - player.vy >= p.y + p.height) {
-                        player.y = p.y + p.height + player.radius;
-                        player.vy = 0;
-                    }
-                }
-            });
-            player.isGrounded = onGroundThisFrame;
-            if(player.isGrounded && !wasGrounded) {
-                player.jumpsRemaining = 2;
-            }
-
-            // Boundary collision
-            if (player.x - player.radius < 0) {
-                player.x = player.radius;
-                player.vx = 0;
-            } else if (player.x + player.radius > canvas.width) {
-                player.x = canvas.width - player.radius;
-                player.vx = 0;
-            }
-
-            // Coin collision
-            coins.forEach((c, index) => {
-                const distance = Math.sqrt(Math.pow(player.x - c.x, 2) + Math.pow(player.y - c.y, 2));
-                if (distance < player.radius + c.radius) {
-                    coins.splice(index, 1);
-                    score += 10;
-                    updateUI();
-                }
-            });
-
-            // Spike (obstacle) collision
-            spikes.forEach(s => {
-                if (player.x + player.radius > s.x &&
-                    player.x - player.radius < s.x + s.width &&
-                    player.y + player.radius > s.y &&
-                    player.y - player.radius < s.y + s.height) {
-                    
-                    stopTimer(); // Stop timer on hit
-                    chancesLeft--;
-                    updateUI();
-                    isDeathMessage = true;
-                    if (chancesLeft >= 0) {
-                        showMessageBox("목숨을 잃었습니다!", `가시에 닿았습니다! 남은 기회: ${chancesLeft}`);
-                    } else {
-                        gameOver("모든 기회를 소진했습니다!");
-                    }
-                }
-            });
-
-            // Exit collision and level clear
-            if (player.x + player.radius > exit.x &&
-                player.x - player.radius < exit.x + exit.width &&
-                player.y + player.radius > exit.y &&
-                player.y - player.radius < exit.y + exit.height) {
-                if (coins.length === 0) {
-                    stopTimer();
-                    isDeathMessage = false;
-                    if (levels[level + 1]) {
-                        showMessageBox("레벨 클리어!", "다음 레벨로 이동합니다.");
-                    } else {
-                        gameWin();
-                    }
-                }
-            }
-            
-            // Fall out of the screen
-            if (player.y > canvas.height + player.radius) {
-                stopTimer();
-                chancesLeft--;
-                updateUI();
-                isDeathMessage = true;
-                if (chancesLeft >= 0) {
-                    showMessageBox("목숨을 잃었습니다!", `바닥으로 떨어졌습니다! 남은 기회: ${chancesLeft}`);
-                } else {
-                    gameOver("모든 기회를 소진했습니다!");
-                }
-            }
-        }
-
-        // Drawing function
-        function draw() {
-            if (isPaused && !isGameOver && !hasWon) {
-                return;
-            }
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            platforms.forEach(p => {
-                ctx.save();
-                ctx.fillStyle = '#34495e';
-                ctx.shadowColor = '#00ffff';
-                ctx.shadowBlur = 10;
-                ctx.fillRect(p.x, p.y, p.width, p.height);
-                ctx.restore();
-            });
-            ctx.shadowBlur = 0;
-
-            coins.forEach(c => {
-                ctx.save();
-                ctx.translate(c.x, c.y);
-                
-                ctx.shadowColor = '#00ffff';
-                ctx.shadowBlur = 15;
-                
-                ctx.fillStyle = '#ffc107';
-                ctx.beginPath();
-                ctx.arc(0, 0, c.radius, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.restore();
-            });
-            ctx.shadowBlur = 0;
-
-            spikes.forEach(s => {
-                const numTriangles = Math.floor(s.width / (s.height * 1.5));
-                const triangleWidth = s.width / numTriangles;
-
-                ctx.save();
-                ctx.fillStyle = '#ff0000';
-                ctx.shadowColor = '#ff0000';
-                ctx.shadowBlur = 10;
-                
-                for (let i = 0; i < numTriangles; i++) {
-                    const xOffset = s.x + i * triangleWidth;
-                    ctx.beginPath();
-                    ctx.moveTo(xOffset, s.y + s.height);
-                    ctx.lineTo(xOffset + triangleWidth / 2, s.y);
-                    ctx.lineTo(xOffset + triangleWidth, s.y + s.height);
-                    ctx.closePath();
-                    ctx.fill();
-                }
-                ctx.restore();
-            });
-
-            if (coins.length === 0) {
-                exitGlowIntensity = Math.sin(Date.now() / 200) * 0.2 + 0.8;
-                ctx.save();
-                ctx.shadowColor = '#00ffff';
-                ctx.shadowBlur = 20;
-
-                ctx.fillStyle = `rgba(0, 255, 255, ${exitGlowIntensity})`;
-                ctx.beginPath();
-                ctx.moveTo(exit.x, exit.y + exit.height);
-                ctx.lineTo(exit.x + exit.width / 2, exit.y);
-                ctx.lineTo(exit.x + exit.width, exit.y + exit.height);
-                ctx.fill();
-                ctx.restore();
-            } else {
-                exitInactiveGlow = Math.sin(Date.now() / 500) * 0.1 + 0.2;
-                ctx.save();
-                ctx.shadowColor = `rgba(0, 100, 255, ${exitInactiveGlow})`;
-                ctx.shadowBlur = 15;
-                ctx.fillStyle = 'rgba(26, 35, 126, 0.5)';
-                ctx.beginPath();
-                ctx.moveTo(exit.x, exit.y + exit.height);
-                ctx.lineTo(exit.x + exit.width / 2, exit.y);
-                ctx.lineTo(exit.x + exit.width, exit.y + exit.height);
-                ctx.fill();
-                ctx.restore();
-            }
-            
-            hue = (hue + 1) % 360;
-            player.color = `hsl(${hue}, 100%, 70%)`;
-            ctx.fillStyle = player.color;
-            ctx.beginPath();
-            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // Main game loop
-        function gameLoop() {
-            update();
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
-        
-        // --- Firestore Functions ---
-        async function saveGameRecord(name, finalScore, finalTime) {
-            if (!db || !userId) {
-                console.error("Firebase not initialized or user not authenticated.");
-                return;
-            }
-            try {
-                const collectionPath = `artifacts/${appId}/public/data/bounce_ball_leaderboard`;
-                await addDoc(collection(db, collectionPath), {
-                    playerName: name,
-                    score: finalScore,
-                    time: finalTime,
-                    timestamp: new Date()
-                });
-                console.log("Record saved successfully!");
-            } catch (e) {
-                console.error("Error adding document: ", e);
-            }
-        }
-
-        async function fetchLeaderboard() {
-            if (!db || !userId) {
-                console.error("Firebase not initialized or user not authenticated.");
-                return;
-            }
-            try {
-                const collectionPath = `artifacts/${appId}/public/data/bounce_ball_leaderboard`;
-                const q = query(collection(db, collectionPath));
-                const unsubscribe = onSnapshot(q, (querySnapshot) => {
-                    const records = [];
-                    querySnapshot.forEach((doc) => {
-                        records.push(doc.data());
-                    });
-
-                    records.sort((a, b) => {
-                        if (a.score !== b.score) {
-                            return b.score - a.score;
-                        }
-                        return a.time - b.time;
-                    });
-
-                    leaderboardList.innerHTML = '';
-                    records.slice(0, 10).forEach((record, index) => {
-                        const timeInSeconds = Math.floor(record.time / 1000);
-                        const li = document.createElement('li');
-                        li.innerHTML = `
-                            <span>${index + 1}. ${record.playerName}</span>
-                            <span>점수: ${record.score}</span>
-                            <span>시간: ${timeInSeconds}초</span>
-                        `;
-                        leaderboardList.appendChild(li);
-                    });
-                });
-                return unsubscribe;
-            } catch (e) {
-                console.error("Error fetching leaderboard: ", e);
-            }
-        }
-
-        // Initial setup on window load
-        window.onload = function() {
-            canvas.width = 800;
-            canvas.height = 500;
-            initializeFirebase();
-            updateUI();
-            updateTimerDisplay(TIME_LIMIT);
-            // Game loop will start with a button click
-            if(!gameLoopId) {
-                gameLoopId = requestAnimationFrame(gameLoop);
-            }
-        };
-
-        window.addEventListener('resize', () => {
-            draw();
-        });
-    </script>
-</body>
-</html>
+        closeMessageButton.addEventListener('click', () => {
+            messageBox.style.display = 'none';
+            if (isGameOver || hasWon) {
+                // 게임 오버/승리 후에는 아무것도 하지 않음 (엔드 스크린에서 처리)
+            } else if (isDeathMessage) {                 isPaused = false;
+                 isGameRunning = true;
+            } 
