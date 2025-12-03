@@ -1,1174 +1,795 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>바운스 볼 마스터</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-        
-        // 여기에 프로젝트별 Firebase 설정 객체를 입력하세요.
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY", // 실제 키로 대체하세요
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-        
-        // Firebase 변수들을 전역으로 노출
-        window.initializeApp = initializeApp;
-        window.getFirestore = getFirestore;
-        window.collection = collection;
-        window.addDoc = addDoc;
-        window.query = query;
-        window.orderBy = orderBy;
-        window.limit = limit;
-        window.getDocs = getDocs;
-        window.deleteDoc = deleteDoc;
-        window.doc = doc;
-    </script>
-    <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #1a202c; /* 다크 모드 배경 */
-            color: #e2e8f0;
-        }
-        .game-container {
-            position: relative;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-            border: 4px solid #4a5568;
-            border-radius: 8px;
-        }
-        canvas {
-            display: block;
-            background-color: #2d3748; /* 게임 배경 */
-        }
-        .dimmer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* 클릭을 방해하지 않도록 */
-        }
-        .ui-box {
-            background-color: #2d3748;
-            border: 1px solid #4a5568;
-            padding: 10px;
-            border-radius: 5px;
-            text-align: center;
-        }
-        .leaderboard-list li {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px dashed #4a5568;
-        }
-        .leaderboard-list li:last-child {
-            border-bottom: none;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>최고의 2D 바운스볼: 10단계 마스터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js 사운드 및 음악 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #1d2b40;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+        }
+
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 255, 0.3),
+                0 0 40px rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            transition: background-color 0.5s;
+        }
+
+        .ui-panel {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            z-index: 10;
+        }
+        
+        .timer-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+
+        .info-box {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            color: #e0f7fa;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-shadow: 0 0 5px #00ffff;
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+        
+        .timer-box {
+            padding: 10px 15px;
+            background: rgba(255, 65, 108, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 65, 108, 0.4);
+            box-shadow: 0 0 10px rgba(255, 65, 108, 0.5);
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-width: 150px;
+            text-align: center;
+        }
+        
+        .lives-box {
+            font-size: 1.5rem;
+            color: #ff416c;
+            text-shadow: 0 0 8px #ff416c;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.8), 0 0 30px rgba(0, 255, 255, 0.5); }
+            100% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
+        }
+
+        .message-box, .rules-box, .end-screen {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(17, 24, 39, 0.95);
+            color: #e0f7fa;
+            padding: 32px 48px;
+            border-radius: 16px;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.8);
+            text-align: center;
+            display: none;
+            z-index: 20;
+            border: 2px solid #00ffff;
+            min-width: 350px;
+            max-width: 90%;
+        }
+        
+        .rules-box, .start-screen {
+            display: block; /* 초기 로드 시 표시 */
+        }
+
+        .message-box h3, .rules-box h3, .end-screen h3 {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 16px;
+            text-shadow: 0 0 8px #00ffff;
+        }
+        
+        .message-box p, .rules-box p, .end-screen p {
+            font-size: 1.1rem;
+            color: #b3e0ff;
+            margin-bottom: 32px;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+        
+        .message-box button, .rules-box button, .end-screen button {
+            background-image: linear-gradient(45deg, #00ffff, #00bfff);
+            color: #111827;
+            padding: 12px 28px;
+            border-radius: 9999px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+        }
+        
+        .message-box button:hover, .rules-box button:hover, .end-screen button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 255, 255, 0.9);
+        }
+        
+        #leaderboard {
+            width: 100%;
+            max-height: 250px;
+            overflow-y: auto;
+            margin-top: 20px;
+            list-style: none;
+            padding: 0;
+            text-align: left;
+        }
+        #leaderboard li {
+            background-color: rgba(255, 255, 255, 0.08);
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1rem;
+        }
+        #leaderboard li:nth-child(1) { background-color: rgba(255, 215, 0, 0.2); }
+        #leaderboard li:nth-child(2) { background-color: rgba(192, 192, 192, 0.2); }
+        #leaderboard li:nth-child(3) { background-color: rgba(205, 127, 50, 0.2); }
+    </style>
 </head>
-<body class="p-8">
-
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-4xl font-bold text-center mb-6 text-indigo-400">🔴 바운스 볼 마스터</h1>
-
-        <div class="flex justify-between items-center mb-4 p-4 rounded-lg bg-gray-800 shadow-lg">
-            <div id="score" class="text-xl font-bold text-yellow-400">점수: 0</div>
-            <div id="level" class="text-xl font-bold text-green-400">레벨: 1</div>
-            <div id="lives" class="text-2xl">❤️❤️❤️</div>
-            <div id="time" class="text-xl font-bold text-blue-400">남은 시간: 00:00</div>
-        </div>
-
-        <div class="game-container mx-auto">
-            <canvas id="gameCanvas" class="w-full"></canvas>
-            <div id="dimmer" class="dimmer transition-colors duration-500"></div>
-
-            <div id="startScreen" class="absolute inset-0 flex flex-col justify-center items-center bg-gray-900 bg-opacity-90 transition-opacity duration-300">
-                <h2 class="text-5xl font-extrabold mb-6 text-indigo-400">GAME START</h2>
-                <input type="text" id="playerNameInput" placeholder="플레이어 이름 (랭킹 등록용)" class="p-3 mb-4 rounded-lg text-gray-900 w-64 text-center border-2 border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-600">
-                <button id="startGameButton" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-full shadow-xl transition duration-150">
-                    게임 시작 (사운드 활성화)
-                </button>
-                <p class="mt-4 text-sm text-gray-400">WASD 또는 화살표 키로 이동 및 점프</p>
-                <p class="mt-2 text-sm text-gray-400">Ctrl/Cmd + S 로 랭킹 저장/로드 기능 활성화</p>
-            </div>
-
-            <div id="messageBox" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 p-8 bg-gray-800 border-4 border-yellow-500 rounded-lg shadow-2xl z-20 hidden text-center">
-                <h3 id="messageTitle" class="text-3xl font-bold mb-4 text-yellow-400">PAUSE</h3>
-                <p id="messageText" class="mb-6 text-lg">게임을 일시정지했습니다.</p>
-                <button id="closeMessageButton" class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-2 px-6 rounded transition duration-150">
-                    계속하기 / 다음 레벨로
-                </button>
-            </div>
-            
-            <div id="endScreen" class="absolute inset-0 flex flex-col justify-center items-center bg-gray-900 bg-opacity-95 z-30 hidden text-center p-8">
-                <h2 id="endTitle" class="text-6xl font-extrabold mb-4 text-red-500">게임 오버!</h2>
-                <p id="endMessage" class="text-xl mb-8 text-gray-300"></p>
-                <div class="grid grid-cols-2 gap-4 text-left mb-8">
-                    <p class="text-lg font-semibold text-green-400">최종 레벨:</p> <p id="finalLevel" class="text-xl font-bold text-white">0</p>
-                    <p class="text-lg font-semibold text-yellow-400">총 점수:</p> <p id="finalScore" class="text-xl font-bold text-white">0</p>
-                    <p class="text-lg font-semibold text-blue-400">총 시간:</p> <p id="finalTime" class="text-xl font-bold text-white">00:00</p>
-                    <p class="text-lg font-extrabold text-red-400">랭킹 점수:</p> <p id="finalRankingScore" class="text-2xl font-extrabold text-red-500">0</p>
-                </div>
-                <button id="restartGameButton" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full shadow-xl transition duration-150">
-                    다시 시작
-                </button>
-            </div>
-        </div>
-
-        <div class="mt-8 p-6 bg-gray-800 rounded-lg shadow-lg">
-            <h3 class="text-2xl font-bold mb-4 text-purple-400 text-center">🏆 바운스볼 랭킹 (Top 10)</h3>
-            <ol id="leaderboardList" class="leaderboard-list list-decimal pl-5 text-lg">
-                <li>랭킹 로드 대기 중...</li>
-            </ol>
-        </div>
-    </div>
-
-    <script type="module">
-        // Firebase 변수 가져오기
-        const { initializeApp, getFirestore, collection, addDoc, query, orderBy, limit, getDocs, deleteDoc, doc } = window;
-
-        // --- Firebase 설정 및 변수 ---
-        let db;
-        let isAuthReady = false;
-        
-        const firebaseConfig = {
-            // 여기에 프로젝트별 Firebase 설정 객체를 입력하세요. (HTML <script type="module"> 부분과 동일)
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        function initializeFirebase() {
-            if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-                console.error("Firebase API Key를 설정해 주세요!");
-                leaderboardList.innerHTML = '<li>경고: Firebase 키가 설정되지 않았습니다. 랭킹 기능 비활성화.</li>';
-                return;
-            }
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                isAuthReady = true;
-                console.log("Firebase 초기화 성공.");
-                fetchLeaderboard(); // 랭킹 로드 시도
-            } catch (error) {
-                console.error("Firebase 초기화 중 오류 발생:", error);
-                leaderboardList.innerHTML = '<li>오류: Firebase 초기화 실패.</li>';
-            }
-        }
-        
-        // --- 게임 상수 및 변수 ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const dimmer = document.getElementById('dimmer');
-
-        // UI 요소
-        const scoreElement = document.getElementById('score');
-        const levelElement = document.getElementById('level');
-        const livesElement = document.getElementById('lives');
-        const timeElement = document.getElementById('time');
-        const startScreen = document.getElementById('startScreen');
-        const startGameButton = document.getElementById('startGameButton');
-        const playerNameInput = document.getElementById('playerNameInput');
-        const messageBox = document.getElementById('messageBox');
-        const messageTitle = document.getElementById('messageTitle');
-        const messageText = document.getElementById('messageText');
-        const closeMessageButton = document.getElementById('closeMessageButton');
-        const endScreen = document.getElementById('endScreen');
-        const endTitle = document.getElementById('endTitle');
-        const endMessage = document.getElementById('endMessage');
-        const finalLevel = document.getElementById('finalLevel');
-        const finalScore = document.getElementById('finalScore');
-        const finalTime = document.getElementById('finalTime');
-        const finalRankingScore = document.getElementById('finalRankingScore');
-        const restartGameButton = document.getElementById('restartGameButton');
-        const leaderboardList = document.getElementById('leaderboardList');
-
-
-        // 게임 상태
-        let isGameRunning = false;
-        let isPaused = true;
-        let isGameOver = false;
-        let hasWon = false;
-        let isDeathMessage = false;
-
-        // 플레이어 정보
-        let playerName = '익명';
-        let score = 0;
-        let level = 1;
-        let chancesLeft = 3; // 기회 (하트)
-        let totalTime = 0; // 전체 게임 누적 시간 (ms)
-
-        // 시간 관련
-        let lastUpdateTime = 0;
-        let gameLoopId;
-        const levelTimeLimit = 60000; // 레벨당 60초 (ms)
-        let levelTimeRemaining = levelTimeLimit;
-        let levelStartTime = 0;
-        
-        // 쿨타임
-        let lastJumpTime = 0;
-        const jumpCooldown = 300; // 0.3초 쿨타임
-        let lastTeleportTime = 0;
-        const teleportCooldown = 2000; // 2초 쿨타임
-
-        // 물리 상수
-        const gravity = 0.5;
-        const friction = 0.85; // 땅 위 마찰
-        const airFriction = 0.99; // 공기 저항
-
-        // 플레이어 오브젝트
-        const player = {
-            x: 50,
-            y: 50,
-            vx: 0,
-            vy: 0,
-            radius: 10,
-            speed: 5,
-            jumpPower: -10,
-            isGrounded: false,
-            jumpsRemaining: 2 // 더블 점프
-        };
-
-        // 게임 요소 배열
-        let platforms = [];
-        let coins = [];
-        let spikes = [];
-        let teleporters = [];
-        let exit = null;
-
-        // 입력 상태
-        const keys = {
-            left: false,
-            right: false,
-            up: false,
-            down: false
-        };
-
-        // 시각 효과
-        let hue = 0; // HSL 색상 회전용
-        let exitGlowIntensity = 0;
-        let exitInactiveGlow = 0;
-
-        // --- 사운드 설정 (Tone.js) ---
-        const jumpSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: "square" },
-            envelope: { attack: 0.001, decay: 0.1, sustain: 0.0, release: 0.1 }
-        }).toDestination();
-        
-        const coinSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: "sine" },
-            envelope: { attack: 0.001, decay: 0.05, sustain: 0.0, release: 0.05 }
-        }).toDestination();
-        
-        const deathSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: "sawtooth" },
-            envelope: { attack: 0.01, decay: 0.5, sustain: 0.0, release: 0.5 }
-        }).toDestination();
-
-        // BGM (Simple Loop)
-        const bgm = new Tone.MembraneSynth({
-            "envelope": { "sustain": 0.8, "release": 0.05 },
-            "volume": -15
-        }).toDestination();
-        
-        function startBGM() {
-            Tone.Transport.scheduleRepeat(time => {
-                bgm.triggerAttackRelease("C2", "8n", time);
-                bgm.triggerAttackRelease("G2", "8n", time + Tone.Time("8n").toSeconds());
-            }, "4n");
-            Tone.Transport.bpm.value = 120;
-            Tone.Transport.start();
-        }
-
-        // --- 레벨 데이터 (Level 1부터 Level 10까지) ---
-        const levels = {
-            1: {
-                startPos: { x: 50, y: 400 },
-                platforms: [
-                    { x: 0, y: 480, width: 800, height: 20 },
-                    { x: 150, y: 350, width: 100, height: 20 },
-                    { x: 300, y: 250, width: 150, height: 20 },
-                    { x: 550, y: 150, width: 100, height: 20 }
-                ],
-                coins: [
-                    { x: 200, y: 320, radius: 8 },
-                    { x: 375, y: 220, radius: 8 },
-                    { x: 600, y: 120, radius: 8 }
-                ],
-                spikes: [],
-                teleporters: [],
-                exit: { x: 700, y: 430, width: 50, height: 50 },
-                dimmerOpacity: 0.1
-            },
-            // 레벨 2: 간단한 점프 도전
-            2: {
-                startPos: { x: 50, y: 400 },
-                platforms: [
-                    { x: 0, y: 480, width: 800, height: 20 },
-                    { x: 200, y: 380, width: 100, height: 20 },
-                    { x: 400, y: 280, width: 100, height: 20 },
-                    { x: 600, y: 180, width: 100, height: 20 }
-                ],
-                coins: [
-                    { x: 250, y: 350, radius: 8 },
-                    { x: 450, y: 250, radius: 8 },
-                    { x: 650, y: 150, radius: 8 }
-                ],
-                spikes: [{ x: 50, y: 460, width: 100, height: 20 }], // 시작 지점 근처에 스파이크 추가
-                teleporters: [],
-                exit: { x: 700, y: 130, width: 50, height: 50 },
-                dimmerOpacity: 0.15
-            },
-            // 레벨 3: 움직이는 플랫폼과 점프
-            3: {
-                startPos: { x: 50, y: 400 },
-                platforms: [
-                    { x: 0, y: 480, width: 800, height: 20 },
-                    { x: 100, y: 380, width: 100, height: 20 },
-                    { x: 300, y: 300, width: 150, height: 20 },
-                    { x: 550, y: 220, width: 200, height: 20 }
-                ],
-                coins: [
-                    { x: 150, y: 350, radius: 8 },
-                    { x: 400, y: 270, radius: 8 },
-                    { x: 650, y: 190, radius: 8 }
-                ],
-                spikes: [
-                    { x: 200, y: 460, width: 100, height: 20 },
-                    { x: 500, y: 460, width: 100, height: 20 }
-                ],
-                teleporters: [],
-                exit: { x: 700, y: 430, width: 50, height: 50 },
-                dimmerOpacity: 0.2
-            },
-            // 레벨 4: 텔레포터 도입
-            4: {
-                startPos: { x: 50, y: 400 },
-                platforms: [
-                    { x: 0, y: 480, width: 800, height: 20 },
-                    { x: 100, y: 350, width: 100, height: 20 },
-                    { x: 600, y: 150, width: 150, height: 20 }
-                ],
-                coins: [
-                    { x: 150, y: 320, radius: 8 },
-                    { x: 675, y: 120, radius: 8 }
-                ],
-                spikes: [
-                    { x: 250, y: 460, width: 100, height: 20 },
-                    { x: 450, y: 460, width: 100, height: 20 }
-                ],
-                teleporters: [
-                    { x: 50, y: 430, width: 50, height: 50, id: 1, targetId: 2 },
-                    { x: 700, y: 430, width: 50, height: 50, id: 2, targetId: 1 }
-                ],
-                exit: { x: 375, y: 430, width: 50, height: 50 },
-                dimmerOpacity: 0.25
-            },
-            // 레벨 5: 이중 텔레포트 및 좁은 점프
-            5: {
-                startPos: { x: 50, y: 400 },
-                platforms: [
-                    { x: 0, y: 480, width: 800, height: 20 },
-                    { x: 150, y: 350, width: 50, height: 20 },
-                    { x: 600, y: 250, width: 50, height: 20 },
-                ],
-                coins: [
-                    { x: 175, y: 320, radius: 8 },
-                    { x: 625, y: 220, radius: 8 },
-                    { x: 400, y: 150, radius: 8 }
-                ],
-                spikes: [
-                    { x: 250, y: 460, width: 300, height: 20 }
-                ],
-                teleporters: [
-                    { x: 100, y: 430, width: 50, height: 50, id: 1, targetId: 2 },
-                    { x: 650, y: 430, width: 50, height: 50, id: 2, targetId: 1 }
-                ],
-                exit: { x: 750, y: 50, width: 50, height: 50 },
-                dimmerOpacity: 0.3
-            },
-            // 레벨 6: 천장 스파이크
-            6: {
-                startPos: { x: 50, y: 400 },
-                platforms: [
-                    { x: 0, y: 480, width: 800, height: 20 },
-                    { x: 200, y: 380, width: 100, height: 20 },
-                    { x: 500, y: 280, width: 100, height: 20 },
-                ],
-                coins: [
-                    { x: 250, y: 350, radius: 8 },
-                    { x: 550, y: 250, radius: 8 }
-                ],
-                spikes: [
-                    { x: 100, y: 460, width: 100, height: 20 },
-                    { x: 350, y: 460, width: 100, height: 20 },
-                    { x: 0, y: 0, width: 800, height: 20 }, // 천장 스파이크
-                ],
-                teleporters: [],
-                exit: { x: 700, y: 430, width: 50, height: 50 },
-                dimmerOpacity: 0.35
-            },
-            // 레벨 7: 좁은 통로
-            7: {
-                startPos: { x: 50, y: 400 },
-                platforms: [
-                    { x: 0, y: 480, width: 800, height: 20 },
-                    { x: 200, y: 300, width: 400, height: 20 },
-                ],
-                coins: [
-                    { x: 300, y: 270, radius: 8 },
-                    { x: 500, y: 270, radius: 8 }
-                ],
-                spikes: [
-                    { x: 50, y: 460, width: 100, height: 20 },
-                    { x: 650, y: 460, width: 100, height: 20 },
-                    { x: 250, y: 320, width: 300, height: 20 }, // 좁은 통로의 천장 스파이크
-                ],
-                teleporters: [
-                    { x: 10, y: 430, width: 50, height: 50, id: 1, targetId: 2 },
-                    { x: 740, y: 430, width: 50, height: 50, id: 2, targetId: 1 }
-                ],
-                exit: { x: 400, y: 430, width: 50, height: 50 },
-                dimmerOpacity: 0.4
-            },
-            // 레벨 8: 복잡한 텔레포트
-            8: {
-                startPos: { x: 50, y: 400 },
-                platforms: [
-                    { x: 0, y: 480, width: 800, height: 20 },
-                    { x: 200, y: 250, width: 100, height: 20 },
-                    { x: 500, y: 350, width: 100, height: 20 },
-                ],
-                coins: [
-                    { x: 250, y: 220, radius: 8 },
-                    { x: 550, y: 320, radius: 8 }
-                ],
-                spikes: [
-                    { x: 350, y: 460, width: 100, height: 20 }
-                ],
-                teleporters: [
-                    { x: 100, y: 430, width: 50, height: 50, id: 1, targetId: 3 },
-                    { x: 700, y: 430, width: 50, height: 50, id: 2, targetId: 1 },
-                    { x: 200, y: 200, width: 50, height: 50, id: 3, targetId: 2 }
-                ],
-                exit: { x: 400, y: 430, width: 50, height: 50 },
-                dimmerOpacity: 0.45
-            },
-            // 레벨 9: 극한의 점프와 스파이크
-            9: {
-                startPos: { x: 50, y: 400 },
-                platforms: [
-                    { x: 0, y: 480, width: 800, height: 20 },
-                    { x: 200, y: 380, width: 50, height: 20 },
-                    { x: 400, y: 280, width: 50, height: 20 },
-                    { x: 600, y: 180, width: 50, height: 20 },
-                ],
-                coins: [
-                    { x: 225, y: 350, radius: 8 },
-                    { x: 425, y: 250, radius: 8 },
-                    { x: 625, y: 150, radius: 8 }
-                ],
-                spikes: [
-                    { x: 100, y: 460, width: 100, height: 20 },
-                    { x: 300, y: 460, width: 100, height: 20 },
-                    { x: 500, y: 460, width: 100, height: 20 },
-                    { x: 700, y: 460, width: 100, height: 20 }
-                ],
-                teleporters: [],
-                exit: { x: 750, y: 130, width: 50, height: 50 },
-                dimmerOpacity: 0.5
-            },
-            // 레벨 10: 최종 보스 레벨 (모든 요소의 조합)
-            10: {
-                startPos: { x: 50, y: 400 },
-                platforms: [
-                    { x: 0, y: 480, width: 800, height: 20 },
-                    { x: 150, y: 300, width: 100, height: 20 },
-                    { x: 550, y: 200, width: 100, height: 20 }
-                ],
-                coins: [
-                    { x: 200, y: 270, radius: 8 },
-                    { x: 600, y: 170, radius: 8 },
-                    { x: 400, y: 100, radius: 8 }
-                ],
-                spikes: [
-                    { x: 10, y: 460, width: 100, height: 20 },
-                    { x: 280, y: 460, width: 100, height: 20 },
-                    { x: 500, y: 460, width: 100, height: 20 },
-                    { x: 700, y: 460, width: 100, height: 20 },
-                    { x: 0, y: 0, width: 800, height: 20 } // 천장 스파이크
-                ],
-                teleporters: [
-                    { x: 400, y: 430, width: 50, height: 50, id: 1, targetId: 2 },
-                    { x: 750, y: 430, width: 50, height: 50, id: 2, targetId: 1 }
-                ],
-                exit: { x: 400, y: 30, width: 50, height: 50 },
-                dimmerOpacity: 0.6
-            }
-        };
-
-
-        // --- 게임 엔진 핵심 함수 ---
-
-        function updateUI() {
-            scoreElement.textContent = `점수: ${score}`;
-            levelElement.textContent = `레벨: ${level}`;
-            let hearts = '';
-            for (let i = 0; i < 3; i++) {
-                if (chancesLeft > i) {
-                    hearts += '❤️';
-                } else {
-                    hearts += '🖤';
-                }
-            }
-            livesElement.innerHTML = `${hearts}`;
-        }
-
-        function formatTime(ms) {
-            const totalSeconds = Math.floor(ms / 1000);
-            const minutes = Math.floor(totalSeconds / 60);
-            const seconds = totalSeconds % 60;
-            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        function updateTimerDisplay(ms) {
-            const timeFormatted = formatTime(ms);
-            timeElement.textContent = `남은 시간: ${timeFormatted}`;
-            if (ms < 10000) {
-                timeElement.classList.add('bg-red-700', 'animate-pulse');
-                deathSynth.triggerAttackRelease("C4", "8n");
-            } else {
-                timeElement.classList.remove('bg-red-700', 'animate-pulse');
-            }
-        }
-
-        function calculateRankingScore(currentScore, finalTotalTime, finalLevel) {
-            const totalSeconds = Math.floor(finalTotalTime / 1000);
-            const timePenalty = totalSeconds * 10;
-            const levelBonus = finalLevel * 1000;
-            return Math.max(0, currentScore + levelBonus - timePenalty);
-        }
-
-        function loadLevel(isRetry = false) {
-            const levelData = levels[level];
-            if (!levelData) {
-                hasWon = true;
-                gameOver(true);
-                return;
-            }
-            
-            // 캔버스 크기 조정
-            canvas.width = 800;
-            canvas.height = 500;
-
-            // 플레이어 초기화
-            player.x = levelData.startPos.x;
-            player.y = levelData.startPos.y;
-            player.vx = 0;
-            player.vy = 0;
-            player.jumpsRemaining = 2;
-            player.isGrounded = false;
-            lastTeleportTime = 0; // 쿨타임 초기화
-            
-            // 게임 요소 로드
-            platforms.length = 0;
-            coins.length = 0;
-            spikes.length = 0;
-            teleporters.length = 0;
-            platforms.push(...levelData.platforms);
-            coins.push(...levelData.coins.map(c => ({...c, collected: false})));
-            spikes.push(...levelData.spikes);
-            teleporters.push(...levelData.teleporters);
-            exit = levelData.exit;
-
-            // UI 및 타이머 업데이트
-            levelElement.textContent = `레벨: ${level}`;
-            dimmer.style.backgroundColor = `rgba(0, 0, 0, ${levelData.dimmerOpacity})`;
-
-            if (!isRetry) {
-                levelStartTime = performance.now();
-                levelTimeRemaining = levelTimeLimit;
-            }
-            
-            updateUI();
-        }
-
-        function checkCollision(player, rect) {
-            const closestX = Math.max(rect.x, Math.min(player.x, rect.x + rect.width));
-            const closestY = Math.max(rect.y, Math.min(player.y, rect.y + rect.height));
-            const distanceX = player.x - closestX;
-            const distanceY = player.y - closestY;
-            
-            const distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
-            return distanceSquared < (player.radius * player.radius);
-        }
-
-        function resolveCollision(player, rect) {
-            const closestX = Math.max(rect.x, Math.min(player.x, rect.x + rect.width));
-            const closestY = Math.max(rect.y, Math.min(player.y, rect.y + rect.height));
-            
-            const dx = player.x - closestX;
-            const dy = player.y - closestY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance < player.radius) {
-                const overlap = player.radius - distance;
-                const top = Math.abs(player.y + player.radius - rect.y);
-                const bottom = Math.abs(rect.y + rect.height - player.y + player.radius);
-                const left = Math.abs(player.x + player.radius - rect.x);
-                const right = Math.abs(rect.x + rect.width - player.x + player.radius);
-                
-                const minOverlap = Math.min(top, bottom, left, right);
-                
-                if (minOverlap === top && player.vy >= 0) {
-                    player.y = rect.y - player.radius;
-                    player.vy = 0;
-                    player.isGrounded = true;
-                    player.jumpsRemaining = 2;
-                    return;
-                }
-                if (minOverlap === bottom && player.vy <= 0) {
-                    player.y = rect.y + rect.height + player.radius;
-                    player.vy = 0;
-                    return;
-                }
-                if (minOverlap === left) {
-                    player.x = rect.x - player.radius;
-                    player.vx = -player.vx * 0.5;
-                    return;
-                }
-                if (minOverlap === right) {
-                    player.x = rect.x + rect.width + player.radius;
-                    player.vx = -player.vx * 0.5;
-                    return;
-                }
-            }
-        }
-
-        function playerDeath(reason) {
-            if (isPaused || isGameOver) return;
-
-            chancesLeft--;
-            deathSynth.triggerAttackRelease("C3", "0.5");
-
-            const penalty = level * 50;
-            score = Math.max(0, score - penalty);
-            updateUI();
-            
-            isDeathMessage = true;
-            isPaused = true;
-
-            if (chancesLeft <= 0) {
-                gameOver(false);
-            } else {
-                messageTitle.textContent = "실패!";
-                messageText.textContent = `${reason}\n\n기회 ${chancesLeft}번 남음. 점수 ${penalty}점 차감!`;
-                messageBox.style.display = 'block';
-            }
-        }
-
-        function gameOver(isWin) {
-            isGameOver = true;
-            isPaused = true;
-            isGameRunning = false;
-            Tone.Transport.stop();
-            
-            const finalRankingLevel = isWin ? 10 : level;
-            const finalRankingScore = calculateRankingScore(score, totalTime, finalRankingLevel);
-            
-            showEndScreen(isWin, finalRankingScore, finalRankingLevel);
-            
-            if (isAuthReady) {
-                saveScore(playerName, finalRankingScore, finalRankingLevel, totalTime);
-            }
-        }
-
-        function showEndScreen(isWin, finalRankingScore, finalRankingLevel) {
-            endTitle.textContent = isWin ? "최종 승리! 👑" : "게임 오버! 💀";
-            endMessage.textContent = isWin 
-                ? "축하합니다! 모든 레벨을 클리어했습니다. 당신은 최고의 바운스볼 마스터입니다!"
-                : "다음 레벨에 도전할 기회가 다시 주어지기를 바랍니다.";
-                
-            finalLevel.textContent = finalRankingLevel.toString();
-            finalScore.textContent = score.toString();
-            finalTime.textContent = formatTime(totalTime);
-            finalRankingScore.textContent = finalRankingScore.toString();
-            
-            endScreen.style.display = 'block';
-            fetchLeaderboard();
-        }
-
-        function update(dt) {
-            // 1. 입력 처리 및 속도 계산
-            if (keys.left) {
-                player.vx = -player.speed;
-            } else if (keys.right) {
-                player.vx = player.speed;
-            } else {
-                player.vx *= player.isGrounded ? friction : airFriction;
-            }
-
-            if (Math.abs(player.vx) < 0.1) {
-                player.vx = 0;
-            }
-            
-            if (keys.up && (player.isGrounded || player.jumpsRemaining > 0)) {
-                const currentTime = performance.now();
-                if (currentTime - lastJumpTime > jumpCooldown) {
-                    player.vy = player.jumpPower;
-                    player.jumpsRemaining--;
-                    player.isGrounded = false;
-                    lastJumpTime = currentTime;
-                    jumpSynth.triggerAttackRelease("C5", "8n");
-                }
-            }
-            
-            // 2. 물리 적용
-            player.vy += gravity;
-            player.vy = Math.min(player.vy, 10);
-            
-            player.x += player.vx;
-            player.y += player.vy;
-            
-            player.isGrounded = false;
-
-            // 3. 충돌 감지 및 해결
-            platforms.forEach(p => resolveCollision(player, p));
-            
-            if (player.x - player.radius < 0) {
-                player.x = player.radius;
-                player.vx = -player.vx * 0.5;
-            }
-            if (player.x + player.radius > canvas.width) {
-                player.x = canvas.width - player.radius;
-                player.vx = -player.vx * 0.5;
-            }
-            
-            // 4. 게임 요소 상호작용
-            
-            // 코인 수집
-            for (let i = coins.length - 1; i >= 0; i--) {
-                const c = coins[i];
-                if (!c.collected && checkCollision({ ...player, radius: player.radius * 1.5 }, { x: c.x - c.radius, y: c.y - c.radius, width: c.radius * 2, height: c.radius * 2 })) {
-                    coins.splice(i, 1);
-                    score += 100;
-                    coinSynth.triggerAttackRelease("C6", "16n");
-                    updateUI();
-                }
-            }
-            
-            // 스파이크 충돌
-            spikes.forEach(s => {
-                if (checkCollision(player, s)) {
-                    playerDeath(`붉은 가시에 닿았습니다.`);
-                }
-            });
-
-            // 텔레포터 충돌 (쿨타임 적용됨)
-            if (level >= 4) {
-                teleporters.forEach(t => {
-                    if (checkCollision(player, t)) {
-                        const currentTime = performance.now();
-                        if (currentTime - lastTeleportTime < teleportCooldown) {
-                            return; // 쿨타임 중
-                        }
-
-                        const targetTeleporter = teleporters.find(tt => tt.id === t.targetId);
-                        if (targetTeleporter) {
-                            player.x = targetTeleporter.x + targetTeleporter.width / 2;
-                            player.y = targetTeleporter.y - player.radius;
-                            player.vy = 0;
-                            jumpSynth.triggerAttackRelease("F5", "16n");
-                            lastTeleportTime = currentTime; // 쿨타임 업데이트
-                        }
-                    }
-                });
-            }
-            
-            // 출구 도달
-            if (checkCollision(player, exit) && coins.length === 0) {
-                if (level === 10) {
-                    hasWon = true;
-                    totalTime += (levelTimeLimit - levelTimeRemaining);
-                    gameOver(true);
-                } else {
-                    isPaused = true;
-                    isGameRunning = false;
-                    
-                    totalTime += (levelTimeLimit - levelTimeRemaining);
-                    
-                    messageTitle.textContent = `레벨 ${level} 클리어!`;
-                    messageText.textContent = `축하합니다! 다음 레벨로 이동합니다.`;
-                    messageBox.style.display = 'block';
-                }
-            }
-            
-            // 추락 감지
-            if (player.y - player.radius > canvas.height) {
-                playerDeath(`맵 밖으로 추락했습니다.`);
-            }
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // 플랫폼
-            platforms.forEach(p => {
-                ctx.fillStyle = '#4a5568';
-                ctx.fillRect(p.x, p.y, p.width, p.height);
-                ctx.strokeStyle = '#a0aec0';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(p.x, p.y, p.width, p.height);
-            });
-            
-            // 코인
-            coins.forEach(c => {
-                const time = performance.now() / 300;
-                const glow = Math.sin(time) * 5 + 5;
-                ctx.beginPath();
-                ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                ctx.fillStyle = '#ffc837';
-                ctx.shadowBlur = glow;
-                ctx.shadowColor = '#ffc837';
-                ctx.fill();
-                ctx.shadowBlur = 0;
-                ctx.strokeStyle = '#fffbe0';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            });
-
-            // 텔레포터
-            if (level >= 4) {
-                teleporters.forEach(t => {
-                    const time = performance.now() / 500;
-                    const glow = Math.sin(time * t.id) * 10 + 10;
-                    
-                    ctx.fillStyle = `hsl(240, 100%, 50%)`;
-                    ctx.shadowBlur = glow;
-                    ctx.shadowColor = `hsl(240, 100%, 70%)`;
-                    ctx.fillRect(t.x, t.y, t.width, t.height);
-                    
-                    ctx.shadowBlur = 0;
-                    ctx.strokeStyle = `hsl(240, 100%, 80%)`;
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(t.x, t.y, t.width, t.height);
-                });
-            }
-
-            // 스파이크
-            spikes.forEach(s => {
-                ctx.fillStyle = '#ff416c';
-                ctx.beginPath();
-                
-                const numSpikes = Math.floor(s.width / 10);
-                for (let i = 0; i < numSpikes; i++) {
-                    const base = s.x + i * 10;
-                    const spikeHeight = s.height; 
-                    
-                    // 스파이크 방향 결정 (y=0이면 아래로, y=480 근처면 위로)
-                    if (s.y < 50) { // 천장 스파이크 (위에서 아래로)
-                        ctx.moveTo(base, s.y);
-                        ctx.lineTo(base + 5, s.y + spikeHeight);
-                        ctx.lineTo(base + 10, s.y);
-                    } else { // 바닥 스파이크 (아래에서 위로)
-                        ctx.moveTo(base, s.y + s.height);
-                        ctx.lineTo(base + 5, s.y);
-                        ctx.lineTo(base + 10, s.y + s.height);
-                    }
-                }
-                ctx.closePath();
-                ctx.fill();
-                
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = '#ff416c';
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            });
-            
-            // 출구
-            if (exit) {
-                const isCompleted = coins.length === 0;
-                
-                if (isCompleted) {
-                    exitGlowIntensity = Math.min(20, exitGlowIntensity + 0.5);
-                    ctx.fillStyle = '#68d391';
-                } else {
-                    exitInactiveGlow = Math.min(5, exitInactiveGlow + 0.1);
-                    ctx.fillStyle = '#4c7c59';
-                }
-                
-                ctx.shadowBlur = isCompleted ? exitGlowIntensity : exitInactiveGlow;
-                ctx.shadowColor = isCompleted ? '#68d391' : '#4c7c59';
-                ctx.fillRect(exit.x, exit.y, exit.width, exit.height);
-                ctx.shadowBlur = 0;
-                
-                ctx.fillStyle = '#fff';
-                ctx.font = '10px Inter';
-                ctx.textAlign = 'center';
-                ctx.fillText(isCompleted ? "EXIT" : `COINS x ${coins.length}`, exit.x + exit.width / 2, exit.y + exit.height / 2 + 3);
-            }
-
-            // 플레이어(볼)
-            hue = (hue + 1) % 360;
-            const playerColor = `hsl(${hue}, 100%, 70%)`;
-            
-            ctx.beginPath();
-            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-            ctx.fillStyle = playerColor;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = playerColor;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            if (player.jumpsRemaining > 0) {
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.arc(player.x, player.y, player.radius + 3, 0, Math.PI * 2 * (player.jumpsRemaining / 2));
-                ctx.stroke();
-            }
-        }
-
-        function gameLoop(timestamp) {
-            if (!lastUpdateTime) lastUpdateTime = timestamp;
-            const dt = timestamp - lastUpdateTime;
-            lastUpdateTime = timestamp;
-
-            if (!isPaused && isGameRunning) {
-                levelTimeRemaining -= dt;
-                
-                if (levelTimeRemaining <= 0) {
-                    levelTimeRemaining = 0;
-                    playerDeath(`시간 초과!`);
-                }
-                
-                updateTimerDisplay(levelTimeRemaining);
-                update(dt / 1000 * 60);
-                draw();
-            } else if (isGameRunning) {
-                draw();
-                updateTimerDisplay(levelTimeRemaining);
-            }
-            
-            if (!isGameOver || isGameRunning) {
-                gameLoopId = requestAnimationFrame(gameLoop);
-            }
-        }
-
-        // --- Firebase 함수 ---
-
-        async function fetchLeaderboard() {
-            leaderboardList.innerHTML = '';
-            if (!db || !isAuthReady) {
-                leaderboardList.innerHTML = '<li>데이터베이스 연결 대기 중...</li>';
-                return;
-            }
-
-            try {
-                const scoresRef = collection(db, "bounceball_scores");
-                const q = query(scoresRef, orderBy("rankingScore", "desc"), orderBy("totalTime", "asc"), limit(10));
-                
-                const snapshot = await getDocs(q);
-                const scores = [];
-                snapshot.forEach(doc => {
-                    scores.push(doc.data());
-                });
-
-                if (scores.length === 0) {
-                    leaderboardList.innerHTML = '<li>등록된 랭킹이 없습니다.</li>';
-                    return;
-                }
-
-                scores.forEach((score, index) => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `
-                        <span>#${index + 1} ${score.playerName}</span>
-                        <span class="font-mono">${score.rankingScore}점 (${formatTime(score.totalTime)})</span>
-                    `;
-                    leaderboardList.appendChild(li);
-                });
-
-            } catch (error) {
-                console.error("랭킹 로드 실패:", error);
-                leaderboardList.innerHTML = '<li>랭킹 로드 오류 발생</li>';
-            }
-        }
-
-        async function saveScore(playerName, rankingScore, finalLevel, totalTime) {
-            if (!db || !isAuthReady) return;
-
-            try {
-                const scoresRef = collection(db, "bounceball_scores");
-                
-                // 1. 현재 랭킹 개수 확인 및 최하위 점수 확인
-                const qCount = query(scoresRef, orderBy("rankingScore", "desc"), limit(10));
-                const snapshotCount = await getDocs(qCount);
-                const currentScores = snapshotCount.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-                // 랭킹이 10개 미만이거나, 새 점수가 최하위 점수(10위)보다 높거나 같으면 등록 (동점 시 최단 시간 유리)
-                const isEligible = currentScores.length < 10 || 
-                                   rankingScore > currentScores[currentScores.length - 1].rankingScore ||
-                                   (rankingScore === currentScores[currentScores.length - 1].rankingScore && totalTime < currentScores[currentScores.length - 1].totalTime);
-
-                if (isEligible) {
-                    // 2. 새 점수 저장
-                    await addDoc(scoresRef, {
-                        playerName: playerName,
-                        rankingScore: rankingScore,
-                        finalLevel: finalLevel,
-                        totalTime: totalTime,
-                        timestamp: new Date()
-                    });
-                    console.log("점수 저장 성공:", rankingScore);
-
-                    // 3. 10개 초과 항목 제거 (선택 사항: 랭킹 등록 시 실시간으로 최하위 항목을 삭제하는 대신, 등록 후 10개 초과 시 정리)
-                    const qCleanup = query(scoresRef, orderBy("rankingScore", "desc"), orderBy("totalTime", "asc"));
-                    const snapshotCleanup = await getDocs(qCleanup);
-                    
-                    if (snapshotCleanup.docs.length > 10) {
-                        // 11번째 이후 항목 삭제
-                        for (let i = 10; i < snapshotCleanup.docs.length; i++) {
-                            const docToDelete = snapshotCleanup.docs[i];
-                            await deleteDoc(doc(db, "bounceball_scores", docToDelete.id));
-                        }
-                    }
-
-                } else {
-                    console.log("새 점수가 랭킹 10위권에 들지 못해 등록되지 않습니다.");
-                }
-                
-            } catch (e) {
-                console.error("점수 저장 실패:", e);
-            }
-        }
-
-        // --- 이벤트 핸들러 ---
-
-        function resetGame() {
-            score = 0;
-            level = 1;
-            chancesLeft = 3;
-            totalTime = 0;
-            isGameOver = false;
-            hasWon = false;
-            isDeathMessage = false;
-            
-            endScreen.style.display = 'none';
-            startScreen.style.display = 'block';
-            
-            // 플레이어 이름 유지
-            playerName = playerNameInput.value.trim() || '익명';
-
-            // UI 초기화
-            updateUI();
-            updateTimerDisplay(levelTimeLimit);
-            
-            // 게임 루프 정지 (startScreen에서 다시 시작)
-            if (gameLoopId) {
-                cancelAnimationFrame(gameLoopId);
-                gameLoopId = null;
-            }
-        }
-        
-        startGameButton.addEventListener('click', () => {
-            // Tone.js 활성화 (브라우저 정책)
-            Tone.start(); 
-            startBGM();
-
-            playerName = playerNameInput.value.trim() || '익명';
-            startScreen.style.display = 'none';
-            
-            loadLevel();
-            isPaused = false;
-            isGameRunning = true;
-            
-            if (!gameLoopId) {
-                lastUpdateTime = 0;
-                gameLoopId = requestAnimationFrame(gameLoop);
-            }
-        });
-
-        closeMessageButton.addEventListener('click', () => {
-            messageBox.style.display = 'none';
-            if (isGameOver || hasWon) {
-                // 게임 오버/승리 후에는 엔드 스크린에서 처리
-            } else if (isDeathMessage) {
-                 // 죽음 메시지 후 현재 레벨 재시작
-                 loadLevel(true);
-                 isPaused = false;
-                 isGameRunning = true;
-                 isDeathMessage = false;
-            } else {
-                // 레벨 클리어 후 다음 레벨
-                level++;
-                if (levels[level]) {
-                    loadLevel();
-                    isPaused = false;
-                    isGameRunning = true;
-                    exitGlowIntensity = 0;
-                } else {
-                    hasWon = true;
-                    gameOver(true);
-                }
-            }
-        });
-
-        restartGameButton.addEventListener('click', () => {
-            resetGame();
-        });
-
-        // 키 입력 핸들러
-        document.addEventListener('keydown', (e) => {
-            if (isGameOver || startScreen.style.display !== 'none') return;
-            
-            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
-                keys.left = true;
-            } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
-                keys.right = true;
-            } else if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w' || e.key === ' ') {
-                keys.up = true;
-                e.preventDefault(); // 스페이스바 스크롤 방지
-            } else if (e.key === 'Escape' && isGameRunning && !isDeathMessage && messageBox.style.display === 'none') {
-                 // ESC로 일시정지/재개
-                 isPaused = !isPaused;
-                 if (isPaused) {
-                    messageTitle.textContent = "일시정지";
-                    messageText.textContent = "게임을 잠시 멈췄습니다. 계속하시겠습니까?";
-                    messageBox.style.display = 'block';
-                 } else {
-                    messageBox.style.display = 'none';
-                 }
-            }
-        });
-
-        document.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
-                keys.left = false;
-            } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
-                keys.right = false;
-            } else if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w' || e.key === ' ') {
-                keys.up = false;
-            }
-        });
-        
-        // --- 초기화 및 실행 ---
-
-        initializeFirebase();
-        loadLevel(); // 초기 UI 로드를 위해 한 번 호출
-    </script>
-</body>
-</html>
+<body class="bg-gray-900 flex items-center justify-center p-4">
+    <div class="game-container flex flex-col items-center justify-center">
+        <div class="ui-panel">
+            <div class="info-box" id="score">점수: 0</div>
+            <div class="info-box" id="level">레벨: 1</div>
+            <div class="lives-box" id="lives-info">❤️ x 3</div>
+        </div>
+        <div class="timer-panel">
+            <div class="timer-box" id="time-info">남은 시간: 60초</div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="dimmer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0); pointer-events: none; transition: background-color 0.5s;"></div>
+    </div>
+    
+    <!-- 시작 화면 -->
+    <div id="startScreen" class="rules-box">
+        <h3 class="text-white">게임 시작</h3>
+        <p class="text-center text-sm mb-4">
+            랭킹에 기록될 이름을 입력하세요.
+        </p>
+        <input type="text" id="playerNameInput" class="w-full p-3 rounded-lg border border-gray-300 text-black mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="이름을 입력하세요" />
+        <button id="startNameButton">다음</button>
+    </div>
+
+    <!-- 규칙 화면 -->
+    <div id="rulesBox" class="rules-box hidden">
+        <h3>게임 규칙 (총 10단계)</h3>
+        <p>
+            1. 화살표 키(←, →) 또는 A/D 키로 좌우로 이동하세요. 스페이스바 또는 W 키로 점프하세요.
+            2. **기회:** 총 3번의 기회가 주어지며, 붉은색 가시나 추락 시 기회를 1개 잃습니다.
+            3. **점수 차감:** 기회를 잃을 때마다 **현재 레벨 * 50점**이 차감됩니다.
+            4. **타이머:** 각 레벨당 60초가 주어집니다. 시간이 초과되면 기회 1개를 잃고 현재 레벨에서 재시작합니다.
+            5. **4단계부터 난이도 상승:** 화면이 어두워지며, **순간이동 패드**가 나타납니다.
+            6. **랭킹 초기화:** 랭킹은 최대 10명까지 기록되며, 11번째 기록이 등록되면 기존 랭킹은 모두 초기화됩니다.
+        </p>
+        <button id="startGameButton">확인</button>
+    </div>
+
+    <div id="messageBox" class="message-box hidden">
+        <h3 id="messageTitle"></h3>
+        <p id="messageText"></p>
+        <button id="closeMessageButton">확인</button>
+    </div>
+    
+    <!-- 게임 종료 및 랭킹 화면 -->
+    <div id="endScreen" class="end-screen hidden">
+        <h3 id="endTitle">게임 오버!</h3>
+        <p id="endMessage"></p>
+        <div class="mt-4 text-left mx-auto">
+            <p>최종 도달 레벨: <span id="finalLevel">0</span></p>
+            <p>총 획득 점수: <span id="finalScore">0</span></p>
+            <p>총 누적 클리어 시간: <span id="finalTime">0</span></p>
+            <p>최종 랭킹 점수: <span id="finalRankingScore">0</span></p>
+        </div>
+        <h4 class="text-xl font-bold mt-6 mb-2">랭킹</h4>
+        <ul id="leaderboard"></ul>
+        <button id="playAgainButton" class="mt-4">다시하기</button>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Firebase 모듈 임포트
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            query, 
+            onSnapshot, 
+            getDocs, // 랭킹 개수 확인용
+            deleteDoc, // 랭킹 삭제용
+            doc 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+
+        setLogLevel('debug');
+
+        // 전역 Firebase 변수 (Canvas 환경에서 제공됨)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let app;
+        let db;
+        let auth;
+        let userId;
+        let isAuthReady = false;
+
+        // --- Tone.js 사운드 설정 ---
+        // BGM Synth (배경 음악)
+        const bgmSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "square" },
+            envelope: { attack: 0.1, decay: 0.5, sustain: 0.3, release: 1 },
+            volume: -15
+        }).toDestination();
+
+        // BGM 루프 (간단한 8비트 스타일 멜로디)
+        const loop = new Tone.Sequence((time, note) => {
+            bgmSynth.triggerAttackRelease(note, "4n", time);
+        }, ["C4", "E4", "G4", "A4", "G4", "E4"], "1n").start(0);
+
+        Tone.Transport.bpm.value = 100; // 속도 설정
+        Tone.Transport.loop = true;
+        Tone.Transport.loopStart = 0;
+        Tone.Transport.loopEnd = "2m"; // 2마디 루프
+
+        // 효과음 Synths
+        const coinSynth = new Tone.MetalSynth({
+            frequency: 200,
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.05 },
+            harmonicity: 3.1, modulationIndex: 2, octaves: 1.5
+        }).toDestination();
+
+        const jumpSynth = new Tone.Synth({
+            oscillator: { type: "triangle" },
+            envelope: { attack: 0.005, decay: 0.02, sustain: 0.1, release: 0.1 }
+        }).toDestination();
+        
+        const deathSynth = new Tone.NoiseSynth({
+            noise: { type: "pink" },
+            envelope: { attack: 0.005, decay: 0.2, sustain: 0 }
+        }).toDestination();
+
+        function startBGM() {
+            // 사용자의 상호작용 후 Tone.js 시작
+            if (Tone.Transport.state !== 'started') {
+                Tone.start();
+                Tone.Transport.start();
+            }
+        }
+        // --- End Tone.js Setup ---
+
+
+        // Firebase 초기화 및 인증 설정
+        function initializeFirebase() {
+            if (Object.keys(firebaseConfig).length === 0) {
+                console.error("Firebase 설정이 제공되지 않았습니다.");
+                return;
+            }
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+            } catch (error) {
+                console.error("Firebase 초기화 실패:", error);
+                return;
+            }
+
+            // 인증 상태 변화 감지 및 초기 인증
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    isAuthReady = true;
+                    fetchLeaderboard();
+                } else {
+                    try {
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("로그인 실패:", error);
+                    }
+                }
+            });
+        }
+        
+        // --- 게임 로직 변수 ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const dimmer = document.getElementById('dimmer');
+        const scoreElement = document.getElementById('score');
+        const levelElement = document.getElementById('level');
+        const timeElement = document.getElementById('time-info');
+        const livesElement = document.getElementById('lives-info');
+        const messageBox = document.getElementById('messageBox');
+        const messageTitle = document.getElementById('messageTitle');
+        const messageText = document.getElementById('messageText');
+        const closeMessageButton = document.getElementById('closeMessageButton');
+        const startScreen = document.getElementById('startScreen');
+        const rulesBox = document.getElementById('rulesBox');
+        const endScreen = document.getElementById('endScreen');
+        const startNameButton = document.getElementById('startNameButton');
+        const startGameButton = document.getElementById('startGameButton');
+        const playAgainButton = document.getElementById('playAgainButton');
+        const playerNameInput = document.getElementById('playerNameInput');
+        const finalLevel = document.getElementById('finalLevel');
+        const finalScore = document.getElementById('finalScore');
+        const finalTime = document.getElementById('finalTime');
+        const finalRankingScore = document.getElementById('finalRankingScore');
+        const leaderboardList = document.getElementById('leaderboard');
+        
+        // 게임 상태 변수
+        let score = 0;
+        let level = 1;
+        let isGameOver = false;
+        let hasWon = false;
+        let isPaused = true;
+        let isGameRunning = false;
+        let lastJumpTime = 0;
+        const jumpCooldown = 300; // ms
+        let playerName = '';
+        
+        let levelStartTime = 0; // 현재 레벨 시작 시점 (ms)
+        const levelTimeLimit = 60000; // 60초 (ms)
+        let levelTimeRemaining = levelTimeLimit; // 남은 시간 (ms)
+        let totalTime = 0; // 1단계부터의 누적 클리어 시간 (ms)
+        let lastUpdateTime = 0;
+        let chancesLeft = 3; // 총 3번의 기회 (초기 생명 + 2)
+        let isDeathMessage = false;
+
+        // 플레이어(볼) 객체
+        const player = {
+            x: 0,
+            y: 0,
+            radius: 15,
+            color: '#ff6b6b',
+            vx: 0,
+            vy: 0,
+            speed: 5,
+            jumpPower: -10,
+            jumpsRemaining: 2,
+            isGrounded: false
+        };
+
+        const gravity = 0.5;
+        const friction = 0.8;
+        const airFriction = 0.98;
+        let hue = 0; // 무지개색을 위한 색상 변수
+
+        // 게임 요소 배열
+        const platforms = [];
+        const coins = [];
+        const spikes = [];
+        const teleporters = [];
+        let exit;
+
+        // 애니메이션 변수
+        let exitGlowIntensity = 0;
+        let exitInactiveGlow = 0;
+        let gameLoopId;
+
+        // 레벨 데이터 (이전 레벨 데이터 유지)
+        const levels = {
+            1: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 200, y: 350, width: 150, height: 20 },
+                    { x: 450, y: 280, width: 100, height: 20 },
+                    { x: 600, y: 200, width: 100, height: 20 }
+                ],
+                coins: [
+                    { x: 275, y: 320, radius: 10 },
+                    { x: 495, y: 250, radius: 10 },
+                    { x: 650, y: 170, radius: 10 }
+                ],
+                spikes: [
+                    { x: 300, y: 430, width: 40, height: 20 },
+                    { x: 500, y: 430, width: 40, height: 20 }
+                ],
+                teleporters: [],
+                exit: { x: 700, y: 160, width: 50, height: 40, color: '#68d391' }
+            },
+            2: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 150, y: 350, width: 100, height: 20 },
+                    { x: 300, y: 250, width: 150, height: 20 },
+                    { x: 500, y: 320, width: 120, height: 20 },
+                    { x: 650, y: 200, width: 80, height: 20 },
+                    { x: 400, y: 120, width: 100, height: 20 }
+                ],
+                coins: [
+                    { x: 200, y: 320, radius: 10 },
+                    { x: 375, y: 220, radius: 10 },
+                    { x: 690, y: 170, radius: 10 },
+                    { x: 450, y: 90, radius: 10 }
+                ],
+                spikes: [
+                    { x: 400, y: 430, width: 40, height: 20 },
+                    { x: 550, y: 300, width: 40, height: 20 },
+                    { x: 300, y: 230, width: 40, height: 20 }
+                ],
+                teleporters: [],
+                exit: { x: 750, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            3: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 150, y: 350, width: 100, height: 20 },
+                    { x: 300, y: 250, width: 150, height: 20 },
+                    { x: 500, y: 150, width: 120, height: 20 },
+                    { x: 650, y: 250, width: 80, height: 20 },
+                    { x: 200, y: 150, width: 100, height: 20 }
+                ],
+                coins: [
+                    { x: 200, y: 320, radius: 10 },
+                    { x: 375, y: 220, radius: 10 },
+                    { x: 560, y: 120, radius: 10 },
+                    { x: 700, y: 220, radius: 10 },
+                    { x: 250, y: 120, radius: 10 }
+                ],
+                spikes: [
+                    { x: 400, y: 430, width: 40, height: 20 },
+                    { x: 550, y: 230, width: 40, height: 20 },
+                    { x: 100, y: 430, width: 40, height: 20 },
+                    { x: 600, y: 130, width: 40, height: 20 }
+                ],
+                teleporters: [],
+                exit: { x: 750, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            4: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.3, // 4단계부터 어두워짐 시작
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 100, y: 350, width: 80, height: 20 },
+                    { x: 250, y: 280, width: 100, height: 20 },
+                    { x: 400, y: 200, width: 150, height: 20 },
+                    { x: 600, y: 150, width: 80, height: 20 },
+                    { x: 700, y: 350, width: 50, height: 20 }
+                ],
+                coins: [
+                    { x: 140, y: 320, radius: 10 },
+                    { x: 300, y: 250, radius: 10 },
+                    { x: 500, y: 170, radius: 10 },
+                    { x: 640, y: 120, radius: 10 }
+                ],
+                spikes: [
+                    { x: 200, y: 430, width: 40, height: 20 },
+                    { x: 450, y: 430, width: 40, height: 20 },
+                    { x: 520, y: 180, width: 40, height: 20 },
+                    { x: 700, y: 430, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 710, y: 310, width: 30, height: 40, id: 1, targetId: 2 }, // A -> B
+                    { x: 10, y: 410, width: 30, height: 40, id: 2, targetId: 1 }  // B -> A
+                ],
+                exit: { x: 450, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            5: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.4,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 150, y: 300, width: 100, height: 20 },
+                    { x: 350, y: 200, width: 100, height: 20 },
+                    { x: 550, y: 100, width: 100, height: 20 },
+                    { x: 700, y: 250, width: 50, height: 20 }
+                ],
+                coins: [
+                    { x: 200, y: 270, radius: 10 },
+                    { x: 400, y: 170, radius: 10 },
+                    { x: 600, y: 70, radius: 10 },
+                    { x: 725, y: 220, radius: 10 }
+                ],
+                spikes: [
+                    { x: 300, y: 430, width: 100, height: 20 },
+                    { x: 550, y: 430, width: 100, height: 20 },
+                    { x: 450, y: 180, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 10, y: 410, width: 30, height: 40, id: 1, targetId: 2 },
+                    { x: 760, y: 410, width: 30, height: 40, id: 2, targetId: 1 }
+                ],
+                exit: { x: 250, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            6: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.5,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 100, y: 350, width: 50, height: 20 },
+                    { x: 200, y: 250, width: 100, height: 20 },
+                    { x: 400, y: 350, width: 150, height: 20 },
+                    { x: 600, y: 250, width: 100, height: 20 }
+                ],
+                coins: [
+                    { x: 125, y: 320, radius: 10 },
+                    { x: 250, y: 220, radius: 10 },
+                    { x: 475, y: 320, radius: 10 },
+                    { x: 650, y: 220, radius: 10 }
+                ],
+                spikes: [
+                    { x: 350, y: 430, width: 100, height: 20 },
+                    { x: 180, y: 230, width: 40, height: 20 },
+                    { x: 680, y: 230, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 750, y: 410, width: 30, height: 40, id: 1, targetId: 2 },
+                    { x: 50, y: 150, width: 30, height: 40, id: 2, targetId: 1 }
+                ],
+                exit: { x: 450, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            7: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.6,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 150, y: 350, width: 50, height: 20 },
+                    { x: 250, y: 250, width: 100, height: 20 },
+                    { x: 450, y: 350, width: 50, height: 20 },
+                    { x: 600, y: 250, width: 100, height: 20 },
+                    { x: 400, y: 150, width: 50, height: 20 }
+                ],
+                coins: [
+                    { x: 175, y: 320, radius: 10 },
+                    { x: 300, y: 220, radius: 10 },
+                    { x: 475, y: 320, radius: 10 },
+                    { x: 650, y: 220, radius: 10 },
+                    { x: 425, y: 120, radius: 10 }
+                ],
+                spikes: [
+                    { x: 200, y: 430, width: 150, height: 20 },
+                    { x: 550, y: 430, width: 150, height: 20 },
+                    { x: 300, y: 230, width: 40, height: 20 },
+                    { x: 650, y: 230, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 10, y: 410, width: 30, height: 40, id: 1, targetId: 2 },
+                    { x: 750, y: 210, width: 30, height: 40, id: 2, targetId: 1 }
+                ],
+                exit: { x: 750, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            8: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.65,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 100, y: 300, width: 100, height: 20 },
+                    { x: 300, y: 150, width: 150, height: 20 },
+                    { x: 550, y: 300, width: 100, height: 20 },
+                    { x: 700, y: 400, width: 50, height: 20 }
+                ],
+                coins: [
+                    { x: 150, y: 270, radius: 10 },
+                    { x: 375, y: 120, radius: 10 },
+                    { x: 600, y: 270, radius: 10 },
+                    { x: 725, y: 370, radius: 10 }
+                ],
+                spikes: [
+                    { x: 250, y: 430, width: 50, height: 20 },
+                    { x: 500, y: 430, width: 50, height: 20 },
+                    { x: 300, y: 130, width: 40, height: 20 },
+                    { x: 410, y: 130, width: 40, height: 20 },
+                    { x: 550, y: 280, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 150, y: 410, width: 30, height: 40, id: 1, targetId: 2 },
+                    { x: 600, y: 100, width: 30, height: 40, id: 2, targetId: 1 }
+                ],
+                exit: { x: 750, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            9: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.7,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 100, y: 350, width: 150, height: 20 },
+                    { x: 300, y: 250, width: 100, height: 20 },
+                    { x: 500, y: 150, width: 150, height: 20 },
+                    { x: 700, y: 250, width: 50, height: 20 }
+                ],
+                coins: [
+                    { x: 175, y: 320, radius: 10 },
+                    { x: 350, y: 220, radius: 10 },
+                    { x: 575, y: 120, radius: 10 },
+                    { x: 725, y: 220, radius: 10 }
+                ],
+                spikes: [
+                    { x: 400, y: 430, width: 100, height: 20 },
+                    { x: 100, y: 330, width: 40, height: 20 },
+                    { x: 210, y: 330, width: 40, height: 20 },
+                    { x: 500, y: 130, width: 40, height: 20 },
+                    { x: 610, y: 130, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 10, y: 410, width: 30, height: 40, id: 1, targetId: 2 },
+                    { x: 760, y: 410, width: 30, height: 40, id: 2, targetId: 3 },
+                    { x: 300, y: 210, width: 30, height: 40, id: 3, targetId: 1 }
+                ],
+                exit: { x: 450, y: 410, width: 50, height: 40, color: '#68d391' }
+            },
+            10: {
+                startPos: { x: 50, y: 400 },
+                dimmerOpacity: 0.75,
+                platforms: [
+                    { x: 0, y: 450, width: 800, height: 50 },
+                    { x: 150, y: 300, width: 50, height: 20 },
+                    { x: 350, y: 200, width: 50, height: 20 },
+                    { x: 550, y: 100, width: 50, height: 20 },
+                    { x: 700, y: 250, width: 50, height: 20 }
+                ],
+                coins: [
+                    { x: 175, y: 270, radius: 10 },
+                    { x: 375, y: 170, radius: 10 },
+                    { x: 575, y: 70, radius: 10 },
+                    { x: 725, y: 220, radius: 10 }
+                ],
+                spikes: [
+                    { x: 250, y: 430, width: 100, height: 20 },
+                    { x: 450, y: 430, width: 100, height: 20 },
+                    { x: 150, y: 280, width: 40, height: 20 },
+                    { x: 350, y: 180, width: 40, height: 20 },
+                    { x: 550, y: 80, width: 40, height: 20 },
+                    { x: 700, y: 230, width: 40, height: 20 }
+                ],
+                teleporters: [
+                    { x: 10, y: 410, width: 30, height: 40, id: 1, targetId: 2 },
+                    { x: 760, y: 410, width: 30, height: 40, id: 2, targetId: 3 },
+                    { x: 350, y: 410, width: 30, height: 40, id: 3, targetId: 1 }
+                ],
+                exit: { x: 600, y: 410, width: 50, height: 40, color: '#68d391' }
+            }
+        };
+
+        // 키 입력 핸들러
+        const keys = { left: false, right: false, up: false };
+
+        document.addEventListener('keydown', (e) => {
+            if (isGameOver || hasWon || isPaused) return;
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+            if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+                if (!keys.up) keys.up = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+            if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = false;
+        });
+        
+        // 이벤트 리스너 설정
+        startNameButton.addEventListener('click', () => {
+            playerName = playerNameInput.value.trim();
+            if (playerName) {
+                startScreen.style.display = 'none';
+                rulesBox.style.display = 'block';
+            } else {
+                playerNameInput.placeholder = "이름을 꼭 입력해주세요!";
+                playerNameInput.classList.add('ring-2', 'ring-red-500');
+            }
+        });
+
+        startGameButton.addEventListener('click', () => {
+            rulesBox.style.display = 'none';
+            isPaused = false;
+            isGameRunning = true;
+            chancesLeft = 3; 
+            totalTime = 0;
+            level = 1;
+            score = 0;
+            loadLevel();
+            levelStartTime = performance.now(); // 최초 레벨 시작 시간 설정
+            if(!gameLoopId) {
+                gameLoopId = requestAnimationFrame(gameLoop);
+            }
+            startBGM(); // 게임 시작 시 BGM 재생
+        });
+        
+        playAgainButton.addEventListener('click', () => {
+            endScreen.style.display = 'none';
+            startScreen.style.display = 'block';
+            isPaused = true;
+            playerNameInput.value = '';
+            level = 1;
+            score = 0;
+            isGameOver = false;
+            hasWon = false;
+            isGameRunning = false;
+            chancesLeft = 3;
+            totalTime = 0;
+            updateUI();
+            updateTimerDisplay(levelTimeLimit);
+            dimmer.style.backgroundColor = 'rgba(0, 0, 0, 0)'; // 밝게 초기화
+        });
+
+        closeMessageButton.addEventListener('click', () => {
+            messageBox.style.display = 'none';
+            if (isGameOver || hasWon) {
+                // 게임 오버/승리 후에는 아무것도 하지 않음 (엔드 스크린에서 처리)
+            } else if (isDeathMessage) {
+                 // 죽음 메시지 후 현재 레벨 재시작
+                 loadLevel(true); // 현재 레벨을 총 시간 초기화 없이 다시 로드
+                 isPaused = false;
+                 isGameRunning = true;
+     
